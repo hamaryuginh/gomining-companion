@@ -16,6 +16,18 @@
 
     <main>
       <p id="status-text">Chargement…</p>
+
+      <section id="costs-section">
+        <div id="costs-header">
+          <span>⚙ Coûts d'upgrade</span>
+          <button id="costs-toggle" class="toggle-btn">▼</button>
+        </div>
+        <div id="costs-panel" class="hidden">
+          <div id="costs-grid"></div>
+          <button id="costs-reset" class="reset-btn">Rétablir les défauts</button>
+          <button id="recalculate-btn" class="recalc-btn hidden">Enregistrer</button>
+        </div>
+      </section>
     </main>
   </div>
   <script src="popup.js"></script>

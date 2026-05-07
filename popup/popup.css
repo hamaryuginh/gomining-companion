@@ -8,22 +8,22 @@ body {
   font-family: 'Segoe UI', sans-serif;
   background: #0f0f1a;
   color: #e0e0e0;
-  width: 280px;
+  width: 300px;
 }
 
 .popup-container {
-  padding: 16px;
+  padding: 12px;
 }
 
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 h1 {
-  font-size: 16px;
+  font-size: 15px;
   color: #ffaa00;
 }
 
@@ -39,6 +39,157 @@ h1 {
 }
 
 #status-text {
-  font-size: 13px;
+  font-size: 12px;
   color: #aaa;
+  margin-bottom: 12px;
+}
+
+/* ─── Coûts d'upgrade ─────────────────────────────────── */
+
+#costs-section {
+  border-top: 1px solid #2a2a3a;
+  padding-top: 8px;
+}
+
+#costs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #ccc;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+}
+
+.toggle-btn:hover {
+  color: #ffaa00;
+}
+
+#costs-panel {
+  margin-top: 6px;
+}
+
+#costs-panel.hidden {
+  display: none;
+}
+
+.costs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.costs-extra {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.costs-extra.hidden {
+  display: none;
+}
+
+.costs-extra-toggle {
+  text-align: center;
+  margin-top: 4px;
+}
+
+.costs-extra-link {
+  color: #888;
+  font-size: 11px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.costs-extra-link:hover {
+  color: #ffaa00;
+}
+
+.cost-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1a1a2e;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
+}
+
+.cost-label {
+  color: #aaa;
+  white-space: nowrap;
+}
+
+.cost-input {
+  width: 58px;
+  background: #0f0f1a;
+  border: 1px solid #333;
+  border-radius: 3px;
+  color: #e0e0e0;
+  padding: 2px 4px;
+  font-size: 11px;
+  text-align: right;
+}
+
+.cost-input:focus {
+  outline: none;
+  border-color: #ffaa00;
+}
+
+.cost-input--modified {
+  border-color: #ffaa00;
+  background: #1a1a0a;
+}
+
+.reset-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 5px;
+  background: #2a2a3a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.reset-btn:hover {
+  background: #3a3a4a;
+  border-color: #ffaa00;
+  color: #ffaa00;
+}
+
+.recalc-btn {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px;
+  background: #2a4a2a;
+  border: 1px solid #4a8a4a;
+  border-radius: 4px;
+  color: #8f8;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.recalc-btn:hover {
+  background: #3a5a3a;
+  border-color: #6aba6a;
+  color: #afa;
+}
+
+.recalc-btn.hidden {
+  display: none;
 }

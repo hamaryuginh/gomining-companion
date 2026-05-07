@@ -6,7 +6,7 @@
   const BADGE_CLASS = 'gm-helper-badge';
 
   // ─── Table des coûts d'upgrade (W/TH source → coût par TH en $) ─
-  const UPGRADE_COSTS = {
+  const DEFAULT_UPGRADE_COSTS = {
     16: 1.10,
     17: 1.10,
     18: 1.10,
@@ -43,6 +43,22 @@
     49: 0.10,
     50: 0.10,
   };
+
+  let UPGRADE_COSTS = { ...DEFAULT_UPGRADE_COSTS };
+
+  const api = typeof browser !== 'undefined' ? browser : chrome;
+
+  async function loadUpgradeCosts() {
+    try {
+      const result = await api.storage.local.get('upgradeCosts');
+      if (result.upgradeCosts) {
+        UPGRADE_COSTS = { ...DEFAULT_UPGRADE_COSTS, ...result.upgradeCosts };
+        log('Coûts chargés depuis le stockage local');
+      }
+    } catch (e) {
+      log('Impossible de charger les coûts, utilisation des valeurs par défaut:', e);
+    }
+  }
 
   const TARGET_EFFICIENCY = 15; // W/TH cible
 
@@ -329,10 +345,24 @@
     navObserver.observe(document.body, { childList: true, subtree: true });
   }
 
+  // ─── Message listener (depuis la popup) ──────────────────────────
+
+  api.runtime.onMessage.addListener(async (msg) => {
+    if (msg.action === 'recalculate') {
+      log('Recalcul demandé par la popup');
+      await loadUpgradeCosts();
+      document.querySelectorAll('[data-gm-processed]').forEach((el) => {
+        delete el.dataset.gmProcessed;
+      });
+      processAllCards();
+    }
+  });
+
   // ─── Init ────────────────────────────────────────────────────────
 
-  function init() {
+  async function init() {
     log('Chargé sur', window.location.href);
+    await loadUpgradeCosts();
     setupObserver();
     watchNavigation();
   }
