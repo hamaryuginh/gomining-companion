@@ -1,0 +1,46 @@
+.gm-helper-badge {
+  margin: 0 12px 12px 12px;
+  padding: 8px 10px;
+  background: rgba(117, 64, 239, 0.12);
+  border: 1px solid rgba(117, 64, 239, 0.35);
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  color: #d0c8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gm-helper-badge__title {
+  font-weight: 700;
+  color: #a78bfa;
+  margin-bottom: 2px;
+  font-size: 11px;
+}
+
+.gm-helper-badge__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gm-helper-badge__label {
+  color: #9d93c0;
+}
+
+.gm-helper-badge__value {
+  font-weight: 600;
+  color: #e2d9ff;
+}
+
+.gm-helper-badge__highlight .gm-helper-badge__value {
+  color: #fbbf24;
+  font-size: 12px;
+}
+
+.gm-helper-badge__optimal {
+  color: #86efac;
+  font-weight: 600;
+  justify-content: space-between;
+}

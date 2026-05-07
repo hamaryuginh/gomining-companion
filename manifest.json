@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "GoMining Companion",
+  "version": "1.0.0",
+  "description": "Analyse et enrichit le marketplace GoMining",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "gomining-companion@hamaryuginh.com",
+      "strict_min_version": "109.0"
+    }
+  },
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://app.gomining.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://app.gomining.com/*"
+      ],
+      "js": [
+        "content/content.js"
+      ],
+      "css": [
+        "content/content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
