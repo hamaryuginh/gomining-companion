@@ -7,6 +7,9 @@
 
   // ─── Table des coûts d'upgrade (W/TH source → coût par TH en $) ─
   const DEFAULT_UPGRADE_COSTS = {
+    13: 2.67,
+    14: 2.67,
+    15: 2.67,
     16: 1.10,
     17: 1.10,
     18: 1.10,

@@ -2,6 +2,7 @@ const api = typeof browser !== 'undefined' ? browser : chrome;
 const STORAGE_KEY = 'upgradeCosts';
 
 const DEFAULT_COSTS = {
+  13: 2.67, 14: 2.67, 15: 2.67,
   16: 1.10, 17: 1.10, 18: 1.10, 19: 1.10, 20: 1.10,
   21: 1.00, 22: 1.00, 23: 1.00, 24: 1.00, 25: 1.00,
   26: 1.00, 27: 1.00, 28: 1.00, 29: 0.50, 30: 0.50,
