@@ -12,6 +12,22 @@
   gap: 4px;
 }
 
+.gm-helper-badge__container {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.gm-helper-badge__wrapper {
+  width: 100%;
+}
+
+.gm-helper-badge__separator {
+  height: 100%;
+  width: 1px;
+  border-right: 1px solid rgba(117, 64, 239, 0.35);
+}
+
 .gm-helper-badge__title {
   font-weight: 700;
   color: #a78bfa;

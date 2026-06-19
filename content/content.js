@@ -63,26 +63,27 @@
     }
   }
 
-  const TARGET_EFFICIENCY = 15; // W/TH cible
+  const TARGET_EFFICIENCY_15 = 15;
+  const TARGET_EFFICIENCY_12 = 12;
 
   const log = (...args) => console.log('[GoMining Companion]', ...args);
 
-  // ─── Calcul du coût total d'upgrade vers 15 W/TH ────────────────
+  // ─── Calcul du coût total d'upgrade ────────────────────────────
 
   /**
-   * Calcule le coût total en $ pour upgrader de `fromWth` jusqu'à 15 W/TH
-   * @param {number} fromWth - Efficience actuelle (ex: 18)
+   * Calcule le coût total en $ pour upgrader de `fromWth` jusqu'à la cible
+   * @param {number} fromWth - Efficience actuelle
    * @param {number} thCount - Nombre de TH du mineur
+   * @param {number} target - Efficience cible (défaut: 15)
    * @returns {number} Coût total en $
    */
-  function computeUpgradeCost(fromWth, thCount) {
-    if (fromWth <= TARGET_EFFICIENCY) return 0;
+  function computeUpgradeCost(fromWth, thCount, target = TARGET_EFFICIENCY_15) {
+    if (fromWth <= target) return 0;
 
-    // Arrondi supérieur
     fromWth = Math.ceil(fromWth);
 
     let totalCostPerTh = 0;
-    for (let wth = fromWth; wth > TARGET_EFFICIENCY; wth--) {
+    for (let wth = fromWth; wth > target; wth--) {
       const costPerTh = UPGRADE_COSTS[wth];
       if (costPerTh === undefined) {
         log(`Coût d'upgrade inconnu pour ${wth} W/TH`);
@@ -200,16 +201,26 @@
       return { upgradeCost: null, totalPriceUpgraded: null, pricePerThUpgraded: null };
     }
 
-    const alreadyOptimal = wth <= TARGET_EFFICIENCY;
-    const upgradeCost = alreadyOptimal ? 0 : computeUpgradeCost(wth, th);
-    const totalPriceUpgraded = priceUsd + upgradeCost;
-    const pricePerThUpgraded = totalPriceUpgraded / th;
+    const isOptimal = wth <= TARGET_EFFICIENCY_12;
+    const isPartiallyOptimal = !isOptimal && wth <= TARGET_EFFICIENCY_15;
+
+    const upgradeCostTo15 = (isOptimal || isPartiallyOptimal) ? 0 : computeUpgradeCost(wth, th, TARGET_EFFICIENCY_15);
+    const upgradeCostTo12 = isOptimal ? 0 : computeUpgradeCost(wth, th, TARGET_EFFICIENCY_12);
+
+    const totalPriceUpgradedTo15 = priceUsd + upgradeCostTo15;
+    const totalPriceUpgradedTo12 = priceUsd + upgradeCostTo12;
+    const pricePerThUpgradedTo15 = totalPriceUpgradedTo15 / th;
+    const pricePerThUpgradedTo12 = totalPriceUpgradedTo12 / th;
 
     return {
-      alreadyOptimal,
-      upgradeCost,
-      totalPriceUpgraded,
-      pricePerThUpgraded,
+      isOptimal,
+      isPartiallyOptimal,
+      upgradeCostTo15,
+      upgradeCostTo12,
+      totalPriceUpgradedTo15,
+      totalPriceUpgradedTo12,
+      pricePerThUpgradedTo15,
+      pricePerThUpgradedTo12,
     };
   }
 
@@ -227,11 +238,10 @@
    * @param {Object} metrics  - métriques calculées
    */
   function injectMetrics(card, data, metrics) {
-    // Supprime un éventuel badge précédent (ex: re-rendu SPA)
     card.querySelector(`.${BADGE_CLASS}`)?.remove();
 
     const { th, wth, priceUsd, priceUsdPTh } = data;
-    const { alreadyOptimal, upgradeCost, totalPriceUpgraded, pricePerThUpgraded } = metrics;
+    const { isOptimal, isPartiallyOptimal, upgradeCostTo15, upgradeCostTo12, totalPriceUpgradedTo15, totalPriceUpgradedTo12, pricePerThUpgradedTo15, pricePerThUpgradedTo12 } = metrics;
 
     const footer = card.querySelector('.catalog-item-card__footer');
     if (!footer) return;
@@ -242,28 +252,63 @@
     const badge = document.createElement('div');
     badge.className = BADGE_CLASS;
 
-    if (alreadyOptimal) {
-      // Déjà à 15 W/TH ou mieux → on affiche juste une confirmation
+    if (isOptimal) {
       badge.innerHTML = `
         <div class="${BADGE_CLASS}__row ${BADGE_CLASS}__optimal">
           <span>✅ Déjà optimal (${wth} W/TH)</span>
           <span class="${BADGE_CLASS}__value">${fmt(priceUsdPTh)} / TH</span>
         </div>
       `;
-    } else {
+    } else if (isPartiallyOptimal) {
       badge.innerHTML = `
-        <div class="${BADGE_CLASS}__title">⚡ Après upgrade → ${TARGET_EFFICIENCY} W/TH</div>
+        <div class="${BADGE_CLASS}__title">⚡ Après upgrade → ${TARGET_EFFICIENCY_12} W/TH (optimal)</div>
         <div class="${BADGE_CLASS}__row">
           <span class="${BADGE_CLASS}__label">Coût upgrade</span>
-          <span class="${BADGE_CLASS}__value">${fmt(upgradeCost)}</span>
+          <span class="${BADGE_CLASS}__value">${fmt(upgradeCostTo12)}</span>
         </div>
         <div class="${BADGE_CLASS}__row">
           <span class="${BADGE_CLASS}__label">Prix total</span>
-          <span class="${BADGE_CLASS}__value">${fmt(totalPriceUpgraded)}</span>
+          <span class="${BADGE_CLASS}__value">${fmt(totalPriceUpgradedTo12)}</span>
         </div>
         <div class="${BADGE_CLASS}__row ${BADGE_CLASS}__highlight">
           <span class="${BADGE_CLASS}__label">$/TH upgradé</span>
-          <span class="${BADGE_CLASS}__value">${fmt(pricePerThUpgraded)}</span>
+          <span class="${BADGE_CLASS}__value">${fmt(pricePerThUpgradedTo12)}</span>
+        </div>
+      `;
+    } else {
+      badge.innerHTML = `
+        <div class="${BADGE_CLASS}__container">
+          <div class="${BADGE_CLASS}__wrapper">
+            <div class="${BADGE_CLASS}__title">⚡ Upgrade → ${TARGET_EFFICIENCY_15} W/TH</div>
+            <div class="${BADGE_CLASS}__row">
+              <span class="${BADGE_CLASS}__label">Coût upgrade</span>
+              <span class="${BADGE_CLASS}__value">${fmt(upgradeCostTo15)}</span>
+            </div>
+            <div class="${BADGE_CLASS}__row">
+              <span class="${BADGE_CLASS}__label">Prix total</span>
+              <span class="${BADGE_CLASS}__value">${fmt(totalPriceUpgradedTo15)}</span>
+            </div>
+            <div class="${BADGE_CLASS}__row ${BADGE_CLASS}__highlight">
+              <span class="${BADGE_CLASS}__label">$/TH upgradé</span>
+              <span class="${BADGE_CLASS}__value">${fmt(pricePerThUpgradedTo15)}</span>
+            </div>
+          </div>
+          <div class="${BADGE_CLASS}__separator"></div>
+          <div class="${BADGE_CLASS}__wrapper">
+            <div class="${BADGE_CLASS}__title">⚡ Upgrade → ${TARGET_EFFICIENCY_12} W/TH</div>
+            <div class="${BADGE_CLASS}__row">
+              <span class="${BADGE_CLASS}__label">Coût upgrade</span>
+              <span class="${BADGE_CLASS}__value">${fmt(upgradeCostTo12)}</span>
+            </div>
+            <div class="${BADGE_CLASS}__row">
+              <span class="${BADGE_CLASS}__label">Prix total</span>
+              <span class="${BADGE_CLASS}__value">${fmt(totalPriceUpgradedTo12)}</span>
+            </div>
+            <div class="${BADGE_CLASS}__row ${BADGE_CLASS}__highlight">
+              <span class="${BADGE_CLASS}__label">$/TH upgradé</span>
+              <span class="${BADGE_CLASS}__value">${fmt(pricePerThUpgradedTo12)}</span>
+            </div>
+          </div>
         </div>
       `;
     }
