@@ -52,6 +52,35 @@
 
   let UPGRADE_COSTS = { ...DEFAULT_UPGRADE_COSTS };
 
+  // ─── Coûts d'upgrade de puissance par efficience (paliers) ─────
+  // amountPerTh = coût marginal par TH dans le palier (prevTo, to]
+  const POWER_UPGRADE_COSTS = {
+    12: [
+      [1, 16.99], [2, 15.91], [4, 15.90], [8, 15.8825], [16, 15.865], [32, 15.845],
+      [48, 15.82188], [64, 15.80521], [96, 15.79016], [128, 15.76656], [192, 15.74813],
+      [256, 15.72104], [384, 15.70094], [512, 15.67211], [768, 15.65119], [1024, 15.62163],
+      [1536, 15.60037], [2560, 15.57052], [3584, 15.53638], [5000, 15.51443],
+    ],
+    15: [
+      [1, 10.17], [2, 10.17], [3, 10.17], [4, 10.17], [8, 10.17], [16, 10.17], [32, 10.17],
+      [48, 10.15625], [64, 10.14271], [96, 10.12938], [128, 10.11156], [192, 10.09602],
+      [256, 10.07391], [384, 10.05629], [512, 10.03102], [768, 10.01186], [1024, 9.98456],
+      [1536, 9.96443], [2560, 9.93599], [3584, 9.90311], [5000, 9.88170],
+    ],
+    20: [
+      [1, 6.715], [2, 6.715], [3, 6.715], [4, 6.715], [8, 6.715], [16, 6.715], [32, 6.715],
+      [48, 6.70125], [64, 6.68771], [96, 6.67438], [128, 6.65656], [192, 6.64102],
+      [256, 6.61891], [384, 6.60129], [512, 6.57602], [768, 6.55686], [1024, 6.52956],
+      [1536, 6.50943], [2560, 6.48099], [3584, 6.44811], [5000, 6.42670],
+    ],
+  };
+  const POWER_REF_EFFS = [12, 15, 20];
+
+  // Paliers fusionnés (union de tous les `to`) pour l'intégration
+  const POWER_TIERS = [...new Set(
+    POWER_REF_EFFS.flatMap((e) => POWER_UPGRADE_COSTS[e].map(([to]) => to))
+  )].sort((a, b) => a - b);
+
   const api = typeof browser !== 'undefined' ? browser : chrome;
 
   async function loadUpgradeCosts() {
@@ -96,6 +125,109 @@
     }
 
     return totalCostPerTh * thCount;
+  }
+
+  // ─── Coût d'upgrade de puissance ────────────────────────────────
+
+  /**
+   * Taux marginal (amountPerTh) pour une efficience et une puissance données.
+   * Interpole linéairement entre les 3 efficiencies de référence (12/15/20).
+   * @param {number} eff - Efficience (W/TH)
+   * @param {number} powerTh - Puissance (TH)
+   * @returns {number} coût par TH
+   */
+  function powerRate(eff, powerTh) {
+    if (eff <= 12) return rateInRef(12, powerTh);
+    if (eff >= 20) return rateInRef(20, powerTh);
+
+    if (eff <= 15) {
+      const t = (eff - 12) / 3;
+      return rateInRef(12, powerTh) * (1 - t) + rateInRef(15, powerTh) * t;
+    }
+    const t = (eff - 15) / 5;
+    return rateInRef(15, powerTh) * (1 - t) + rateInRef(20, powerTh) * t;
+  }
+
+  function rateInRef(refEff, powerTh) {
+    const steps = POWER_UPGRADE_COSTS[refEff];
+    let rate = 0;
+    for (const [to, amountPerTh] of steps) {
+      if (powerTh <= to) {
+        rate = amountPerTh;
+        break;
+      }
+      rate = amountPerTh; // au-delà du dernier palier, on garde le dernier taux
+    }
+    return rate;
+  }
+
+  /**
+   * Coût total pour passer de `fromTh` à `toTh` TH à une efficience donnée.
+   * Intègre le taux marginal par palier.
+   * @param {number} eff - Efficience (W/TH)
+   * @param {number} fromTh - Puissance actuelle (TH)
+   * @param {number} toTh - Puissance cible (TH)
+   * @returns {number} coût total en $
+   */
+  function powerUpgradeCost(eff, fromTh, toTh) {
+    if (toTh <= fromTh) return 0;
+
+    let total = 0;
+    let prev = fromTh;
+    for (const tier of POWER_TIERS) {
+      if (tier <= fromTh) continue;
+      if (tier >= toTh) {
+        total += (toTh - prev) * powerRate(eff, toTh);
+        prev = toTh;
+        break;
+      }
+      total += (tier - prev) * powerRate(eff, tier);
+      prev = tier;
+    }
+    if (prev < toTh) {
+      total += (toTh - prev) * powerRate(eff, toTh);
+    }
+    return total;
+  }
+
+  /**
+   * Calcule les deux stratégies d'upgrade (efficience↔puissance).
+   * @param {Object} data - données du mineur
+   * @param {number} targetEff - efficience cible (W/TH)
+   * @param {number} targetTh - puissance cible (TH)
+   * @returns {Object}
+   */
+  function computeUpgradeStrategies(data, targetEff, targetTh) {
+    const currentTh = data.th;
+    const currentWth = data.wth;
+
+    const effNeeded = targetEff < currentWth;
+    const powerNeeded = targetTh > currentTh;
+
+    if (!effNeeded && !powerNeeded) {
+      return { cost: 0, effCost: 0, powerCost: 0, strategy1: null, strategy2: null, both: false };
+    }
+
+    // Stratégie 1 : efficience d'abord, puis puissance
+    const effCost1 = computeUpgradeCost(currentWth, currentTh, targetEff);
+    const powerCost1 = powerNeeded ? powerUpgradeCost(targetEff, currentTh, targetTh) : 0;
+    const total1 = effCost1 + powerCost1;
+
+    // Stratégie 2 : puissance d'abord, puis efficience
+    const powerCost2 = powerNeeded ? powerUpgradeCost(currentWth, currentTh, targetTh) : 0;
+    const effTh2 = Math.max(targetTh, currentTh); // efficience appliquée après power
+    const effCost2 = computeUpgradeCost(currentWth, effTh2, targetEff);
+    const total2 = powerCost2 + effCost2;
+
+    const both = effNeeded && powerNeeded;
+    return {
+      effNeeded,
+      powerNeeded,
+      both,
+      strategy1: { effCost: effCost1, powerCost: powerCost1, total: total1 },
+      strategy2: { effCost: effCost2, powerCost: powerCost2, total: total2 },
+      cost: both ? Math.min(total1, total2) : (effNeeded ? total1 : total2),
+    };
   }
 
   // ─── Extraction des données d'une card ──────────────────────────
@@ -443,7 +575,7 @@
     const isOptimal15 = wth <= TARGET_EFFICIENCY_15;
 
     const card = (target, cost, total, pTh, optimal) => `
-      <div class="${UPGRADE_PANEL_CLASS}__card" data-gm-card-target="${target}" title="Sélectionner ${target} W/TH dans le calculateur">
+      <div class="${UPGRADE_PANEL_CLASS}__card${optimal ? ` ${UPGRADE_PANEL_CLASS}__card--disabled` : ''}" data-gm-card-target="${target}" ${optimal ? '' : `title="Sélectionner ${target} W/TH dans le calculateur"`}>
         <div class="${UPGRADE_PANEL_CLASS}__card-head">
           <span class="${UPGRADE_PANEL_CLASS}__card-target">→ ${target} W/TH</span>
           ${optimal ? `<span class="${UPGRADE_PANEL_CLASS}__card-optimal">Déjà optimal</span>` : ''}
@@ -497,6 +629,7 @@
             <span>$/TH upgradé</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-pth-upgraded>—</span>
           </div>` : ''}
         </div>
+        <div class="${UPGRADE_PANEL_CLASS}__strategies" data-gm-strategies></div>
       </div>`;
 
     return `
@@ -526,10 +659,12 @@
       panel.querySelectorAll('[data-gm-cost], [data-gm-cost-pth], [data-gm-total], [data-gm-pth-upgraded]').forEach((el) => {
         el.textContent = '—';
       });
+      renderStrategies(panel, null);
       return;
     }
 
-    const cost = computeUpgradeCost(data.wth, power, target);
+    const strategies = computeUpgradeStrategies(data, target, power);
+    const cost = strategies.cost;
     const costPTh = cost / power;
 
     panel.querySelector('[data-gm-cost]').textContent = fmt(cost);
@@ -540,6 +675,60 @@
       panel.querySelector('[data-gm-total]').textContent = fmt(total);
       panel.querySelector('[data-gm-pth-upgraded]').textContent = fmt(total / power);
     }
+
+    renderStrategies(panel, strategies, target);
+  }
+
+  /**
+   * Affiche les deux stratégies d'upgrade (si applicable) dans le calculateur
+   * @param {Element} panel
+   * @param {Object|null} strategies
+   * @param {number} targetEff - efficience cible sélectionnée
+   */
+  function renderStrategies(panel, strategies, targetEff) {
+    const container = panel.querySelector('[data-gm-strategies]');
+    if (!container) return;
+
+    // Les coûts power ne sont fiables que pour les efficiences de référence (12/15/20)
+    const isRefEff = POWER_REF_EFFS.includes(targetEff);
+    const show = isRefEff && strategies && strategies.both;
+    container.innerHTML = show ? `
+      <div class="${UPGRADE_PANEL_CLASS}__strategies-title">Stratégies d'upgrade</div>
+      <div class="${UPGRADE_PANEL_CLASS}__strategies-grid">
+        ${buildStrategyCard('① Eff. → Power', strategies.strategy1, strategies.cost === strategies.strategy1.total, true)}
+        ${buildStrategyCard('② Power → Eff.', strategies.strategy2, strategies.cost === strategies.strategy2.total, false)}
+      </div>
+    ` : '';
+  }
+
+  function buildStrategyCard(label, strategy, recommended, effFirst) {
+    const rows = effFirst
+      ? `<div class="${UPGRADE_PANEL_CLASS}__strategy-row">
+          <span>Efficience</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.effCost)}</span>
+        </div>
+        <div class="${UPGRADE_PANEL_CLASS}__strategy-row">
+          <span>Puissance</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.powerCost)}</span>
+        </div>`
+      : `<div class="${UPGRADE_PANEL_CLASS}__strategy-row">
+          <span>Puissance</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.powerCost)}</span>
+        </div>
+        <div class="${UPGRADE_PANEL_CLASS}__strategy-row">
+          <span>Efficience</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.effCost)}</span>
+        </div>`;
+
+    return `
+      <div class="${UPGRADE_PANEL_CLASS}__strategy ${recommended ? `${UPGRADE_PANEL_CLASS}__strategy--recommended` : ''}">
+        <div class="${UPGRADE_PANEL_CLASS}__strategy-head">
+          <span>${label}</span>
+          ${recommended ? `<span class="${UPGRADE_PANEL_CLASS}__strategy-badge">Recommandée</span>` : ''}
+        </div>
+        <div class="${UPGRADE_PANEL_CLASS}__strategy-body">
+          ${rows}
+          <div class="${UPGRADE_PANEL_CLASS}__strategy-row ${UPGRADE_PANEL_CLASS}__strategy-total">
+            <span>Total</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.total)}</span>
+          </div>
+        </div>
+      </div>`;
   }
 
   /**
@@ -571,6 +760,7 @@
     // Clic sur une carte rapide → présélectionne l'efficience cible dans le calculateur
     panel.querySelectorAll('[data-gm-card-target]').forEach((cardEl) => {
       cardEl.addEventListener('click', () => {
+        if (cardEl.classList.contains(`${UPGRADE_PANEL_CLASS}__card--disabled`)) return;
         const target = parseInt(cardEl.dataset.gmCardTarget, 10);
         if (!effSelect) return;
         effSelect.value = String(target);
