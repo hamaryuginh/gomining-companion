@@ -4,6 +4,9 @@
   const MARKETPLACE_URL = 'https://app.gomining.com/marketplace';
   const CARDS_CONTAINER_CLASS = 'catalog-index__cards-row';
   const BADGE_CLASS = 'gm-helper-badge';
+  const MINER_DETAIL_URL_PATTERN = /^https:\/\/app\.gomining\.com\/nft\/view\//;
+  const UPGRADE_PANEL_CLASS = 'gm-upgrade-panel';
+  const DETAIL_DESC_CLASS = 'catalog-item__description--last';
 
   // ─── Table des coûts d'upgrade (W/TH source → coût par TH en $) ─
   const DEFAULT_UPGRADE_COSTS = {
@@ -348,6 +351,260 @@
     console.groupEnd();
   }
 
+  // ─── Page détail d'un mineur NFT ─────────────────────────────────
+
+  function isMinerDetailPage() {
+    return MINER_DETAIL_URL_PATTERN.test(window.location.href);
+  }
+
+  /**
+   * Extrait les données de la page détail (/nft/view/<id>)
+   * @returns {Object|null}
+   */
+  function extractDetailData() {
+    try {
+      const featPower = document.querySelector('.catalog-item__feat .catalog-item__feat-name span.text-truncate');
+      if (!featPower) return null;
+
+      const feats = document.querySelectorAll('.catalog-item__feat');
+      let th = null;
+      let wth = null;
+
+      feats.forEach((feat) => {
+        const name = feat.querySelector('.catalog-item__feat-name span.text-truncate')?.textContent.trim();
+        const value = feat.querySelector('.fw-medium.text-truncate')?.textContent.trim();
+        if (name === 'Power') th = parseNumber(value);       // "151.06 TH" → 151.06
+        else if (name === 'Efficiency') wth = parseNumber(value); // "27 W/TH" → 27
+      });
+
+      // ── Prix (GMT + USD + $/TH) ──────────────────────────────────
+      const nftCardPrice = document.querySelector('nft-card-price');
+      let gmtPrice = null;
+      let priceUsd = null;
+      let priceUsdPTh = null;
+      if (nftCardPrice) {
+        const lead = nftCardPrice.querySelector('.lead');
+        if (lead) gmtPrice = parseNumber(lead.textContent); // "8,000.00"
+
+        const small = nftCardPrice.querySelector('span.text-grey.small');
+        if (small) {
+          const innerSpans = small.querySelectorAll('span');
+          innerSpans.forEach((s) => {
+            const t = s.textContent.trim();
+            if (t.startsWith('$') && t.includes('/ TH')) {
+              priceUsdPTh = parseNumber(t); // "$18.19 / TH" → 18.19
+            } else if (t.startsWith('$') && !t.includes('TH')) {
+              priceUsd = parseNumber(t);    // "$2,747.20" → 2747.20
+            }
+          });
+        }
+      }
+
+      return { th, wth, gmtPrice, priceUsd, priceUsdPTh };
+    } catch (e) {
+      log('Erreur extraction détail:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Construit la liste des efficiences cibles proposées (de 12 à wth courant)
+   * @param {number} currentWth
+   * @param {number} defaultTarget
+   * @returns {string} options HTML
+   */
+  function buildEfficiencyOptions(currentWth, defaultTarget) {
+    const min = TARGET_EFFICIENCY_12;
+    const max = Math.max(min, Math.floor(currentWth));
+    let opts = '';
+    for (let wth = max; wth >= min; wth--) {
+      const selected = wth === defaultTarget ? ' selected' : '';
+      opts += `<option value="${wth}"${selected}>${wth} W/TH</option>`;
+    }
+    return opts;
+  }
+
+  /**
+   * Construit le bloc HTML du calculateur d'upgrade
+   * @param {Object} data
+   * @returns {string}
+   */
+  function buildUpgradePanelHtml(data) {
+    const { th, wth, priceUsd } = data;
+
+    const costTo15 = computeUpgradeCost(wth, th, TARGET_EFFICIENCY_15);
+    const costTo12 = computeUpgradeCost(wth, th, TARGET_EFFICIENCY_12);
+    const totalTo15 = priceUsd ? priceUsd + costTo15 : costTo15;
+    const totalTo12 = priceUsd ? priceUsd + costTo12 : costTo12;
+    const pThTo15 = priceUsd ? totalTo15 / th : null;
+    const pThTo12 = priceUsd ? totalTo12 / th : null;
+
+    const isOptimal12 = wth <= TARGET_EFFICIENCY_12;
+    const isOptimal15 = wth <= TARGET_EFFICIENCY_15;
+
+    const card = (target, cost, total, pTh, optimal) => `
+      <div class="${UPGRADE_PANEL_CLASS}__card" data-gm-card-target="${target}" title="Sélectionner ${target} W/TH dans le calculateur">
+        <div class="${UPGRADE_PANEL_CLASS}__card-head">
+          <span class="${UPGRADE_PANEL_CLASS}__card-target">→ ${target} W/TH</span>
+          ${optimal ? `<span class="${UPGRADE_PANEL_CLASS}__card-optimal">Déjà optimal</span>` : ''}
+        </div>
+        <div class="${UPGRADE_PANEL_CLASS}__card-cost">
+          <span class="${UPGRADE_PANEL_CLASS}__card-label">Coût upgrade</span>
+          <span class="${UPGRADE_PANEL_CLASS}__card-value">${fmt(cost)}</span>
+        </div>
+        ${priceUsd ? `
+        <div class="${UPGRADE_PANEL_CLASS}__card-row">
+          <span>Prix total</span><span>${fmt(total)}</span>
+        </div>
+        <div class="${UPGRADE_PANEL_CLASS}__card-row ${UPGRADE_PANEL_CLASS}__card-row--highlight">
+          <span>$/TH upgradé</span><span>${fmt(pTh)}</span>
+        </div>` : ''}
+      </div>`;
+
+    const quickCards = `
+      <div class="${UPGRADE_PANEL_CLASS}__quick">
+        ${card(TARGET_EFFICIENCY_15, costTo15, totalTo15, pThTo15, isOptimal15)}
+        ${card(TARGET_EFFICIENCY_12, costTo12, totalTo12, pThTo12, isOptimal12)}
+      </div>`;
+
+    const calculator = `
+      <div class="${UPGRADE_PANEL_CLASS}__calc">
+        <div class="${UPGRADE_PANEL_CLASS}__calc-title">Calculateur upgrade complet</div>
+        <div class="${UPGRADE_PANEL_CLASS}__calc-grid">
+          <div class="${UPGRADE_PANEL_CLASS}__field">
+            <label class="${UPGRADE_PANEL_CLASS}__label" for="gm-efficiency">Efficience cible (W/TH)</label>
+            <select class="${UPGRADE_PANEL_CLASS}__select" id="gm-efficiency">
+              ${buildEfficiencyOptions(wth, Math.min(TARGET_EFFICIENCY_15, Math.floor(wth)))}
+            </select>
+          </div>
+          <div class="${UPGRADE_PANEL_CLASS}__field">
+            <label class="${UPGRADE_PANEL_CLASS}__label" for="gm-power">Puissance (TH)</label>
+            <input class="${UPGRADE_PANEL_CLASS}__input" id="gm-power" type="number" min="0" step="0.01" value="${th}">
+          </div>
+        </div>
+        <div class="${UPGRADE_PANEL_CLASS}__calc-result">
+          <div class="${UPGRADE_PANEL_CLASS}__row">
+            <span>Coût upgrade</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-cost>—</span>
+          </div>
+          <div class="${UPGRADE_PANEL_CLASS}__row">
+            <span>Coût / TH</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-cost-pth>—</span>
+          </div>
+          ${priceUsd ? `
+          <div class="${UPGRADE_PANEL_CLASS}__row">
+            <span>Prix total upgradé</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-total>—</span>
+          </div>
+          <div class="${UPGRADE_PANEL_CLASS}__row ${UPGRADE_PANEL_CLASS}__row--highlight">
+            <span>$/TH upgradé</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-pth-upgraded>—</span>
+          </div>` : ''}
+        </div>
+      </div>`;
+
+    return `
+      <div class="${UPGRADE_PANEL_CLASS}" data-gm-upgrade-panel>
+        <div class="${UPGRADE_PANEL_CLASS}__header">
+          <span class="${UPGRADE_PANEL_CLASS}__title">⚡ GoMining Companion — Upgrade</span>
+          <span class="${UPGRADE_PANEL_CLASS}__subtitle">${th} TH • ${wth} W/TH</span>
+        </div>
+        ${quickCards}
+        ${calculator}
+      </div>`;
+  }
+
+  /**
+   * Met à jour le résultat du calculateur en fonction des inputs
+   * @param {Element} panel
+   * @param {Object} data
+   */
+  function updateCalculator(panel, data) {
+    const effSelect = panel.querySelector('#gm-efficiency');
+    const powerInput = panel.querySelector('#gm-power');
+    if (!effSelect || !powerInput) return;
+
+    const target = parseInt(effSelect.value, 10);
+    const power = parseFloat(powerInput.value);
+    if (isNaN(power) || power <= 0) {
+      panel.querySelectorAll('[data-gm-cost], [data-gm-cost-pth], [data-gm-total], [data-gm-pth-upgraded]').forEach((el) => {
+        el.textContent = '—';
+      });
+      return;
+    }
+
+    const cost = computeUpgradeCost(data.wth, power, target);
+    const costPTh = cost / power;
+
+    panel.querySelector('[data-gm-cost]').textContent = fmt(cost);
+    panel.querySelector('[data-gm-cost-pth]').textContent = fmt(costPTh);
+
+    if (data.priceUsd) {
+      const total = data.priceUsd + cost;
+      panel.querySelector('[data-gm-total]').textContent = fmt(total);
+      panel.querySelector('[data-gm-pth-upgraded]').textContent = fmt(total / power);
+    }
+  }
+
+  /**
+   * Injecte le panneau d'upgrade sous .catalog-item__description--last
+   * @param {Object} data
+   */
+  function injectUpgradePanel(data) {
+    const container = document.querySelector(`.${DETAIL_DESC_CLASS}`);
+    if (!container) return;
+
+    const existing = container.nextElementSibling;
+    if (existing?.hasAttribute('data-gm-upgrade-panel')) existing.remove();
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = buildUpgradePanelHtml(data);
+    const panel = wrapper.firstElementChild;
+
+    container.insertAdjacentElement('afterend', panel);
+
+    const effSelect = panel.querySelector('#gm-efficiency');
+    const powerInput = panel.querySelector('#gm-power');
+    if (effSelect) {
+      effSelect.addEventListener('change', () => updateCalculator(panel, data));
+    }
+    if (powerInput) {
+      powerInput.addEventListener('input', () => updateCalculator(panel, data));
+    }
+
+    // Clic sur une carte rapide → présélectionne l'efficience cible dans le calculateur
+    panel.querySelectorAll('[data-gm-card-target]').forEach((cardEl) => {
+      cardEl.addEventListener('click', () => {
+        const target = parseInt(cardEl.dataset.gmCardTarget, 10);
+        if (!effSelect) return;
+        effSelect.value = String(target);
+        updateCalculator(panel, data);
+        const calcEl = panel.querySelector('.gm-upgrade-panel__calc');
+        if (calcEl && typeof calcEl.scrollIntoView === 'function') {
+          calcEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        if (calcEl) {
+          calcEl.classList.remove('gm-upgrade-panel__calc--pulse');
+          void calcEl.offsetWidth; // force reflow pour relancer l'animation
+          calcEl.classList.add('gm-upgrade-panel__calc--pulse');
+          setTimeout(() => calcEl.classList.remove('gm-upgrade-panel__calc--pulse'), 1200);
+        }
+      });
+    });
+    updateCalculator(panel, data);
+  }
+
+  function processMinerDetail() {
+    const container = document.querySelector(`.${DETAIL_DESC_CLASS}`);
+    if (!container) return;
+    if (container.nextElementSibling?.hasAttribute('data-gm-upgrade-panel')) return;
+
+    const data = extractDetailData();
+    if (!data || data.th === null || data.wth === null) {
+      log('Données insuffisantes pour la page détail, skip.');
+      return;
+    }
+
+    log('Détail extrait:', data);
+    injectUpgradePanel(data);
+  }
+
   // ─── Observation du DOM (SPA + chargement dynamique) ────────────
 
   let observerTimeout = null;
@@ -357,7 +614,9 @@
       // Debounce : on attend que les mutations se stabilisent
       clearTimeout(observerTimeout);
       observerTimeout = setTimeout(() => {
-        if (isMarketplacePage()) {
+        if (isMinerDetailPage()) {
+          processMinerDetail();
+        } else if (isMarketplacePage()) {
           processAllCards();
         }
       }, 300);
@@ -388,6 +647,9 @@
         document.querySelectorAll('[data-gm-processed]').forEach((el) => {
           delete el.dataset.gmProcessed;
         });
+        document.querySelectorAll('[data-gm-upgrade-panel]').forEach((el) => {
+          el.remove();
+        });
       }
     });
     navObserver.observe(document.body, { childList: true, subtree: true });
@@ -402,7 +664,11 @@
       document.querySelectorAll('[data-gm-processed]').forEach((el) => {
         delete el.dataset.gmProcessed;
       });
+      document.querySelectorAll('[data-gm-upgrade-panel]').forEach((el) => {
+        el.remove();
+      });
       processAllCards();
+      processMinerDetail();
     }
   });
 
@@ -413,6 +679,13 @@
     await loadUpgradeCosts();
     setupObserver();
     watchNavigation();
+
+    // Traitement initial (les mutations ne déclenchent pas forcément au chargement)
+    if (isMinerDetailPage()) {
+      processMinerDetail();
+    } else if (isMarketplacePage()) {
+      processAllCards();
+    }
   }
 
   init();

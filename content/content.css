@@ -60,3 +60,311 @@
   font-weight: 600;
   justify-content: space-between;
 }
+
+/* ─── Panneau d'upgrade — page détail NFT ───────────────────────── */
+
+.gm-upgrade-panel {
+  margin-top: 16px;
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(117, 64, 239, 0.10) 0%, rgba(117, 64, 239, 0.04) 100%);
+  border: 1px solid rgba(117, 64, 239, 0.35);
+  border-radius: 12px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 12px;
+  color: #e6e0fb;
+}
+
+.gm-upgrade-panel__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.gm-upgrade-panel__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #a78bfa;
+}
+
+.gm-upgrade-panel__subtitle {
+  font-size: 11px;
+  color: #9d93c0;
+}
+
+.gm-upgrade-panel__quick {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.gm-upgrade-panel__card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(117, 64, 239, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gm-upgrade-panel__card:hover {
+  border-color: rgba(117, 64, 239, 0.75);
+  background: rgba(117, 64, 239, 0.16);
+  box-shadow: 0 0 0 2px rgba(117, 64, 239, 0.25), 0 4px 14px rgba(117, 64, 239, 0.18);
+  transform: translateY(-1px);
+}
+
+.gm-upgrade-panel__card:active {
+  transform: translateY(0);
+}
+
+.gm-upgrade-panel__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.gm-upgrade-panel__card-target {
+  font-weight: 700;
+  color: #c4b5fd;
+  font-size: 12px;
+}
+
+.gm-upgrade-panel__card-optimal {
+  font-size: 10px;
+  font-weight: 600;
+  color: #86efac;
+  background: rgba(134, 239, 172, 0.10);
+  border: 1px solid rgba(134, 239, 172, 0.25);
+  border-radius: 6px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+.gm-upgrade-panel__card-cost {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.gm-upgrade-panel__card-label {
+  color: #9d93c0;
+}
+
+.gm-upgrade-panel__card-value {
+  font-weight: 700;
+  color: #fbbf24;
+  font-size: 15px;
+}
+
+.gm-upgrade-panel__card-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  color: #9d93c0;
+  font-size: 11px;
+}
+
+.gm-upgrade-panel__card-row--highlight {
+  color: #e2d9ff;
+}
+
+.gm-upgrade-panel__card-row--highlight span:last-child {
+  color: #e2d9ff;
+  font-weight: 700;
+}
+
+.gm-upgrade-panel__calc {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(117, 64, 239, 0.20);
+  border-radius: 10px;
+  padding: 12px;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.gm-upgrade-panel__calc--pulse {
+  animation: gm-upgrade-pulse 1.2s ease-in-out;
+}
+
+@keyframes gm-upgrade-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(117, 64, 239, 0);
+    border-color: rgba(117, 64, 239, 0.20);
+  }
+  25% {
+    box-shadow: 0 0 0 6px rgba(117, 64, 239, 0.35);
+    border-color: rgba(117, 64, 239, 0.8);
+  }
+  55% {
+    box-shadow: 0 0 0 12px rgba(117, 64, 239, 0.12);
+    border-color: rgba(117, 64, 239, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(117, 64, 239, 0);
+    border-color: rgba(117, 64, 239, 0.20);
+  }
+}
+
+.gm-upgrade-panel__calc-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #a78bfa;
+  margin-bottom: 10px;
+}
+
+.gm-upgrade-panel__calc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.gm-upgrade-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gm-upgrade-panel__label {
+  font-size: 11px;
+  color: #9d93c0;
+}
+
+.gm-upgrade-panel__select,
+.gm-upgrade-panel__input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(117, 64, 239, 0.35);
+  border-radius: 8px;
+  color: #e6e0fb;
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.gm-upgrade-panel__select:focus,
+.gm-upgrade-panel__input:focus {
+  border-color: #7540ef;
+  box-shadow: 0 0 0 2px rgba(117, 64, 239, 0.25);
+}
+
+.gm-upgrade-panel__select option {
+  background: #1b1a2e;
+  color: #e6e0fb;
+}
+
+.gm-upgrade-panel__calc-result {
+  border-top: 1px solid rgba(117, 64, 239, 0.20);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gm-upgrade-panel__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  color: #9d93c0;
+  font-size: 12px;
+}
+
+.gm-upgrade-panel__row-value {
+  color: #e2d9ff;
+  font-weight: 600;
+}
+
+.gm-upgrade-panel__row--highlight {
+  color: #e2d9ff;
+}
+
+.gm-upgrade-panel__row--highlight .gm-upgrade-panel__row-value {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+/* Variante thème clair */
+html.light .gm-upgrade-panel {
+  background: linear-gradient(180deg, rgba(117, 64, 239, 0.08) 0%, rgba(117, 64, 239, 0.02) 100%);
+  border-color: rgba(117, 64, 239, 0.35);
+  color: #2b2740;
+}
+
+html.light .gm-upgrade-panel__title,
+html.light .gm-upgrade-panel__calc-title {
+  color: #6d40ea;
+}
+
+html.light .gm-upgrade-panel__subtitle,
+html.light .gm-upgrade-panel__card-label,
+html.light .gm-upgrade-panel__card-row,
+html.light .gm-upgrade-panel__label,
+html.light .gm-upgrade-panel__row {
+  color: #6b6480;
+}
+
+html.light .gm-upgrade-panel__card {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(117, 64, 239, 0.25);
+}
+
+html.light .gm-upgrade-panel__card:hover {
+  border-color: rgba(117, 64, 239, 0.8);
+  background: rgba(117, 64, 239, 0.12);
+  box-shadow: 0 0 0 2px rgba(117, 64, 239, 0.2), 0 4px 14px rgba(117, 64, 239, 0.15);
+}
+
+html.light .gm-upgrade-panel__card-target {
+  color: #5b21b6;
+}
+
+html.light .gm-upgrade-panel__card-value,
+html.light .gm-upgrade-panel__row--highlight .gm-upgrade-panel__row-value {
+  color: #b45309;
+}
+
+html.light .gm-upgrade-panel__card-row--highlight {
+  color: #2b2740;
+}
+
+html.light .gm-upgrade-panel__card-row--highlight span:last-child {
+  color: #2b2740;
+}
+
+html.light .gm-upgrade-panel__row-value {
+  color: #2b2740;
+}
+
+html.light .gm-upgrade-panel__calc {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(117, 64, 239, 0.20);
+}
+
+html.light .gm-upgrade-panel__select,
+html.light .gm-upgrade-panel__input {
+  background: #ffffff;
+  border-color: rgba(117, 64, 239, 0.4);
+  color: #2b2740;
+}
+
+html.light .gm-upgrade-panel__select option {
+  background: #ffffff;
+  color: #2b2740;
+}
+
+@media (max-width: 480px) {
+  .gm-upgrade-panel__quick,
+  .gm-upgrade-panel__calc-grid {
+    grid-template-columns: 1fr;
+  }
+}
