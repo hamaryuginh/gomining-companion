@@ -3,6 +3,10 @@
 Analyse et enrichit le marketplace GoMining en affichant des métriques de coût d'upgrade directement sur chaque NFT :
 coût total pour passer à 15 W/TH, prix total upgradé, et prix par TH upgradé.
 
+Sur la page détail d'un mineur, un panneau ajoute un calculateur d'upgrade complet, un simulateur de rendement (prix
+BTC/GOMINING live) et, pour les machines de la collection *The Greedy Machines*, un simulateur d'évolution de puissance
+(upgrade hebdomadaire selon les votes veGOMINING).
+
 ![Aperçu sur le marketplace GoMining](assets/gomining-companion_marketplace.jpg)
 
 ## Installation

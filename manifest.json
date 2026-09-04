@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GoMining Companion",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Analyse et enrichit le marketplace GoMining",
   "browser_specific_settings": {
     "gecko": {
@@ -28,6 +28,7 @@
         "content/modules/costs.js",
         "content/modules/rewards.js",
         "content/modules/extract.js",
+        "content/modules/greedy.js",
         "content/modules/marketplace.js",
         "content/modules/panel.js",
         "content/content.js"

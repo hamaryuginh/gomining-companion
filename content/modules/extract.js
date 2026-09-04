@@ -8,7 +8,7 @@
 
   const GM = (globalThis.GM = globalThis.GM || {});
   const { C, log, parseNumber } = GM;
-  const { DAYS_PER_MONTH, DAYS_PER_YEAR } = C;
+  const { DAYS_PER_MONTH, DAYS_PER_YEAR, GREEDY_NAME_PATTERN } = C;
 
   /**
    * Extrait les données brutes d'une card
@@ -132,7 +132,14 @@
         }
       }
 
-      return { th, wth, gmtPrice, priceUsd, priceUsdPTh };
+      // ── Nom de la machine ────────────────────────────────────────
+      // La collection "The Greedy Machines" est détectée dans le nom :
+      // sa puissance augmente chaque semaine selon les votes veGOMINING.
+      const nameEl = document.querySelector('.catalog-item__item-name');
+      const name = nameEl?.textContent.trim() ?? null;
+      const isGreedyMachines = !!(name && GREEDY_NAME_PATTERN.test(name));
+
+      return { th, wth, gmtPrice, priceUsd, priceUsdPTh, name, isGreedyMachines };
     } catch (e) {
       log('Erreur extraction détail:', e);
       return null;

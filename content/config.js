@@ -105,6 +105,13 @@
     DEFAULT_KWH: 0.05,
     DEFAULT_GMT_PRICE: 0.34,
 
+    // ─── Simulateur Greedy Machines ─────────────────────────────────
+    GREEDY_SIM_CLASS: 'gm-greedy-sim',
+    GREEDY_NAME_PATTERN: /greedy machines/i,
+    GREEDY_DEFAULT_RATE: 0.4,     // % / semaine (résultats des votes veGOMINING)
+    GREEDY_DEFAULT_DURATION: 12,  // en semaines
+    GREEDY_MAX_ROWS: 60,
+
     // ─── Endpoints de prix live ─────────────────────────────────────
     API_PRICE_URL: 'https://api.gomining.com/api/exchanges/getPrice?symbol=BTC&value=1',
     API_TOKEN_PRICE_URL: 'https://api.gomining.com/api/exchanges/getTokenPrice',

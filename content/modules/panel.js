@@ -16,6 +16,7 @@
   const { computeUpgradeCost, computeUpgradeStrategies } = GM.costs;
   const { computeYield, resolveGmtPrice, LIVE_PRICE, onLivePrice } = GM.rewards;
   const { extractDetailData, extractRewardCalculatorData } = GM.extract;
+  const { buildGreedySimHtml, updateGreedySim } = GM.greedy;
 
   // ─── Calculateur d'upgrade ───────────────────────────────────────
 
@@ -81,36 +82,41 @@
       </div>`;
 
     const calculator = `
-      <div class="${UPGRADE_PANEL_CLASS}__calc">
-        <div class="${UPGRADE_PANEL_CLASS}__calc-title">Calculateur upgrade complet</div>
-        <div class="${UPGRADE_PANEL_CLASS}__calc-grid">
-          <div class="${UPGRADE_PANEL_CLASS}__field">
-            <label class="${UPGRADE_PANEL_CLASS}__label" for="gm-efficiency">Efficience cible (W/TH)</label>
-            <select class="${UPGRADE_PANEL_CLASS}__select" id="gm-efficiency">
-              ${buildEfficiencyOptions(wth, Math.min(TARGET_EFFICIENCY_15, Math.floor(wth)))}
-            </select>
-          </div>
-          <div class="${UPGRADE_PANEL_CLASS}__field">
-            <label class="${UPGRADE_PANEL_CLASS}__label" for="gm-power">Puissance (TH)</label>
-            <input class="${UPGRADE_PANEL_CLASS}__input" id="gm-power" type="number" min="0" step="0.01" value="${th}">
-          </div>
+      <div class="${UPGRADE_PANEL_CLASS}__calc" data-gm-fold>
+        <div class="${UPGRADE_PANEL_CLASS}__calc-title" data-gm-fold-toggle role="button" tabindex="0" aria-expanded="false">
+          <span>🚀 Calculateur upgrade complet</span>
+          <span class="gm-fold-chevron">▾</span>
         </div>
-        <div class="${UPGRADE_PANEL_CLASS}__calc-result">
-          <div class="${UPGRADE_PANEL_CLASS}__row">
-            <span>Coût upgrade</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-cost>—</span>
+        <div class="${UPGRADE_PANEL_CLASS}__calc-body" data-gm-fold-body>
+          <div class="${UPGRADE_PANEL_CLASS}__calc-grid">
+            <div class="${UPGRADE_PANEL_CLASS}__field">
+              <label class="${UPGRADE_PANEL_CLASS}__label" for="gm-efficiency">Efficience cible (W/TH)</label>
+              <select class="${UPGRADE_PANEL_CLASS}__select" id="gm-efficiency">
+                ${buildEfficiencyOptions(wth, Math.min(TARGET_EFFICIENCY_15, Math.floor(wth)))}
+              </select>
+            </div>
+            <div class="${UPGRADE_PANEL_CLASS}__field">
+              <label class="${UPGRADE_PANEL_CLASS}__label" for="gm-power">Puissance (TH)</label>
+              <input class="${UPGRADE_PANEL_CLASS}__input" id="gm-power" type="number" min="0" step="0.01" value="${th}">
+            </div>
           </div>
-          <div class="${UPGRADE_PANEL_CLASS}__row">
-            <span>Coût / TH</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-cost-pth>—</span>
+          <div class="${UPGRADE_PANEL_CLASS}__calc-result">
+            <div class="${UPGRADE_PANEL_CLASS}__row">
+              <span>Coût upgrade</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-cost>—</span>
+            </div>
+            <div class="${UPGRADE_PANEL_CLASS}__row">
+              <span>Coût / TH</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-cost-pth>—</span>
+            </div>
+            ${priceUsd ? `
+            <div class="${UPGRADE_PANEL_CLASS}__row">
+              <span>Prix total upgradé</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-total>—</span>
+            </div>
+            <div class="${UPGRADE_PANEL_CLASS}__row ${UPGRADE_PANEL_CLASS}__row--highlight">
+              <span>$/TH upgradé</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-pth-upgraded>—</span>
+            </div>` : ''}
           </div>
-          ${priceUsd ? `
-          <div class="${UPGRADE_PANEL_CLASS}__row">
-            <span>Prix total upgradé</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-total>—</span>
-          </div>
-          <div class="${UPGRADE_PANEL_CLASS}__row ${UPGRADE_PANEL_CLASS}__row--highlight">
-            <span>$/TH upgradé</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-pth-upgraded>—</span>
-          </div>` : ''}
+          <div class="${UPGRADE_PANEL_CLASS}__strategies" data-gm-strategies></div>
         </div>
-        <div class="${UPGRADE_PANEL_CLASS}__strategies" data-gm-strategies></div>
       </div>`;
 
     return `
@@ -122,6 +128,7 @@
         ${quickCards}
         ${calculator}
         ${buildYieldSimHtml(data, reward)}
+        ${data.isGreedyMachines ? buildGreedySimHtml(data) : ''}
       </div>`;
   }
 
@@ -271,36 +278,41 @@
       </div>`;
 
     return `
-      <div class="${YIELD_SIM_CLASS}" data-gm-yield-sim>
-        <div class="${YIELD_SIM_CLASS}__header">
-          <span class="${YIELD_SIM_CLASS}__title">📈 Simulateur de rendement</span>
-          <span class="${YIELD_SIM_CLASS}__subtitle">${th} TH → ${wth} W/TH</span>
-        </div>
-        <div class="${YIELD_SIM_CLASS}__params">
-          ${field('btc', `Prix BTC ($) <span class="${YIELD_SIM_CLASS}__live" data-gm-sim-live-btc></span>`, btcPrice, '1')}
-          ${field('sats', 'Rendement (sats/TH/j)', satsPerThDay.toFixed(1), '0.1')}
-          ${field('kwh', 'Coût kWh ($)', kwh.toFixed(4), '0.0001')}
-          ${field('discount', 'Remise maint. (%)', 0, '0.5')}
-        </div>
-        <div class="${YIELD_SIM_CLASS}__currency">
-          <span class="${YIELD_SIM_CLASS}__label">Maintenance en</span>
-          <div class="${YIELD_SIM_CLASS}__tabs">
-            <button type="button" class="${YIELD_SIM_CLASS}__tab active" data-gm-sim-currency="GMT">GOMINING</button>
-            <button type="button" class="${YIELD_SIM_CLASS}__tab" data-gm-sim-currency="BTC">BTC</button>
+      <div class="${YIELD_SIM_CLASS}" data-gm-yield-sim data-gm-fold>
+        <div class="${YIELD_SIM_CLASS}__header" data-gm-fold-toggle role="button" tabindex="0" aria-expanded="false">
+          <div class="${YIELD_SIM_CLASS}__head">
+            <span class="${YIELD_SIM_CLASS}__title">📈 Simulateur de rendement</span>
+            <span class="${YIELD_SIM_CLASS}__subtitle">${th} TH → ${wth} W/TH</span>
           </div>
-          <span class="${YIELD_SIM_CLASS}__live" data-gm-sim-live-gmt></span>
+          <span class="gm-fold-chevron">▾</span>
         </div>
-        <div class="${YIELD_SIM_CLASS}__compare">
-          ${col('Actuel', 'cur')}
-          ${col('Après upgrade', 'tgt', true)}
-        </div>
-        <div class="${YIELD_SIM_CLASS}__delta">
-          <span>Gain net après upgrade</span>
-          <span class="${YIELD_SIM_CLASS}__row-value ${YIELD_SIM_CLASS}__delta-value" data-gm-sim-value="delta-net">—</span>
-        </div>
-        <div class="${YIELD_SIM_CLASS}__note">
-          Formules GoMining : brut = sats/TH/j × TH × BTC ; électricité = kWh × 24 × W/TH × TH ÷ 1000 ;
-          service = $0.0089/TH/j. ROI et délai basés sur le prix + coût d'upgrade.
+        <div class="${YIELD_SIM_CLASS}__body" data-gm-fold-body>
+          <div class="${YIELD_SIM_CLASS}__params">
+            ${field('btc', `Prix BTC ($) <span class="${YIELD_SIM_CLASS}__live" data-gm-sim-live-btc></span>`, btcPrice, '1')}
+            ${field('sats', 'Rendement (sats/TH/j)', satsPerThDay.toFixed(1), '0.1')}
+            ${field('kwh', 'Coût kWh ($)', kwh.toFixed(4), '0.0001')}
+            ${field('discount', 'Remise maint. (%)', 0, '0.1')}
+          </div>
+          <div class="${YIELD_SIM_CLASS}__currency">
+            <span class="${YIELD_SIM_CLASS}__label">Maintenance en</span>
+            <div class="${YIELD_SIM_CLASS}__tabs">
+              <button type="button" class="${YIELD_SIM_CLASS}__tab active" data-gm-sim-currency="GMT">GOMINING</button>
+              <button type="button" class="${YIELD_SIM_CLASS}__tab" data-gm-sim-currency="BTC">BTC</button>
+            </div>
+            <span class="${YIELD_SIM_CLASS}__live" data-gm-sim-live-gmt></span>
+          </div>
+          <div class="${YIELD_SIM_CLASS}__compare">
+            ${col('Actuel', 'cur')}
+            ${col('Après upgrade', 'tgt', true)}
+          </div>
+          <div class="${YIELD_SIM_CLASS}__delta">
+            <span>Gain net après upgrade</span>
+            <span class="${YIELD_SIM_CLASS}__row-value ${YIELD_SIM_CLASS}__delta-value" data-gm-sim-value="delta-net">—</span>
+          </div>
+          <div class="${YIELD_SIM_CLASS}__note">
+            Formules GoMining : brut = sats/TH/j × TH × BTC ; électricité = kWh × 24 × W/TH × TH ÷ 1000 ;
+            service = $0.0089/TH/j. ROI et délai basés sur le prix + coût d'upgrade.
+          </div>
         </div>
       </div>`;
   }
@@ -403,6 +415,9 @@
       deltaEl.textContent = `${delta >= 0 ? '+' : '−'}${fmt(Math.abs(delta))} / j`;
       deltaEl.classList.toggle(`${YIELD_SIM_CLASS}__delta-value--negative`, delta < 0);
     }
+
+    // Le simulateur Greedy Machines partage les mêmes paramètres de rendement
+    updateGreedySim(panel, data);
   }
 
   /**
@@ -475,6 +490,12 @@
       input.addEventListener('input', () => updateYieldSim(panel, data));
     });
 
+    // Inputs du simulateur Greedy Machines → recalcul de la table
+    panel.querySelectorAll('[data-gm-greedy-rate], [data-gm-greedy-duration], [data-gm-greedy-unit]').forEach((el) => {
+      el.addEventListener('input', () => updateGreedySim(panel, data));
+      el.addEventListener('change', () => updateGreedySim(panel, data));
+    });
+
     // Onglets GOMINING / BTC (devise d'affichage de la maintenance)
     panel.querySelectorAll('[data-gm-sim-currency]').forEach((tab) => {
       tab.addEventListener('click', () => {
@@ -505,6 +526,28 @@
     }
 
     // Clic sur une carte rapide → présélectionne l'efficience cible dans le calculateur
+    // et déplie le calculateur (fermé par défaut).
+    const setFold = (toggle, open) => {
+      const block = toggle.closest('[data-gm-fold]');
+      if (!block) return;
+      block.classList.toggle('gm-fold--open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+    };
+
+    panel.querySelectorAll('[data-gm-fold-toggle]').forEach((toggle) => {
+      const toggleFold = () => {
+        const block = toggle.closest('[data-gm-fold]');
+        setFold(toggle, !block?.classList.contains('gm-fold--open'));
+      };
+      toggle.addEventListener('click', toggleFold);
+      toggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleFold();
+        }
+      });
+    });
+
     panel.querySelectorAll('[data-gm-card-target]').forEach((cardEl) => {
       cardEl.addEventListener('click', () => {
         if (cardEl.classList.contains(`${UPGRADE_PANEL_CLASS}__card--disabled`)) return;
@@ -513,6 +556,10 @@
         effSelect.value = String(target);
         updateCalculator(panel, data);
         const calcEl = panel.querySelector('.gm-upgrade-panel__calc');
+        if (calcEl) {
+          const calcToggle = calcEl.querySelector('[data-gm-fold-toggle]');
+          if (calcToggle) setFold(calcToggle, true);
+        }
         if (calcEl && typeof calcEl.scrollIntoView === 'function') {
           calcEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
