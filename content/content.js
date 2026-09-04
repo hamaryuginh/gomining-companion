@@ -230,6 +230,227 @@
     };
   }
 
+  // ─── Simulateur de rendement ─────────────────────────────────────
+  // Formules officielles GoMining (docs.gomining.com) :
+  //   Brut      = sats/TH/jour × TH × BTC price / 1e8
+  //   Électricité = kWh × 24 × W/TH × TH / 1000   (kWh de 0.05 à 0.07 $)
+  //   Service   = 0.0089 $/TH/jour
+  //   Net       = Brut − Maintenance (élec + service, remises déduites)
+  //   ROI annuel = Net/an ÷ investissement total (prix + coût d'upgrade)
+
+  const YIELD_SIM_CLASS = 'gm-yield-sim';
+  const SERVICE_FEE_PER_TH = 0.0089; // $/TH/jour
+  const DAYS_PER_MONTH = 30;
+  const DAYS_PER_YEAR = 365;
+  const DEFAULT_KWH = 0.05;
+  const DEFAULT_GMT_PRICE = 0.34;
+
+  // ─── Prix live (interception des appels API GoMining) ───────────
+
+  const LIVE_PRICE = { btc: null, gmt: null, btcTs: 0, gmtTs: 0 };
+
+  const API_PRICE_URL = 'https://api.gomining.com/api/exchanges/getPrice?symbol=BTC&value=1';
+  const API_TOKEN_PRICE_URL = 'https://api.gomining.com/api/exchanges/getTokenPrice';
+
+  // Hook injecté dans le monde principal : observe les appels fetch/XHR de
+  // l'application vers getPrice / getTokenPrice et les relaie au content script.
+  const LIVE_PRICE_HOOK_SOURCE = `(function () {
+    if (window.__gmLivePriceHook) return;
+    window.__gmLivePriceHook = true;
+
+    var post = function (type, payload) {
+      try { window.postMessage({ source: 'gm-companion-live-price', type: type, payload: payload }, '*'); } catch (e) {}
+    };
+    var kindOf = function (url) {
+      if (!url) return null;
+      if (String(url).indexOf('/api/exchanges/getPrice') !== -1) return 'btc';
+      if (String(url).indexOf('/api/exchanges/getTokenPrice') !== -1) return 'gmt';
+      return null;
+    };
+    var jsonOf = function (text) { try { return JSON.parse(text); } catch (e) { return null; } };
+
+    var origFetch = window.fetch;
+    if (origFetch) {
+      window.fetch = function () {
+        var args = arguments;
+        var url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '';
+        var kind = kindOf(url);
+        return origFetch.apply(this, args).then(function (res) {
+          if (kind) {
+            res.clone().json().then(function (json) { post(kind, json); }).catch(function () {});
+          }
+          return res;
+        });
+      };
+    }
+
+    var origOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function () {
+      this.__gmUrl = arguments[1] || '';
+      return origOpen.apply(this, arguments);
+    };
+    var origSend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send = function () {
+      var kind = kindOf(this.__gmUrl);
+      if (kind) {
+        this.addEventListener('load', function () {
+          var json = jsonOf(this.responseText);
+          if (json) post(kind, json);
+        });
+      }
+      return origSend.apply(this, arguments);
+    };
+  })();`;
+
+  function injectLivePriceHook() {
+    try {
+      const script = document.createElement('script');
+      script.textContent = LIVE_PRICE_HOOK_SOURCE;
+      script.dataset.gmLiveHook = 'true';
+      (document.head || document.documentElement).appendChild(script);
+    } catch (e) {
+      log('Impossible d\'injecter le hook de prix live:', e);
+    }
+  }
+
+  function handleLivePrice(type, payload) {
+    if (!payload || payload.data === undefined || payload.data === null) return;
+    if (type === 'btc' && typeof payload.data === 'number') {
+      LIVE_PRICE.btc = payload.data;
+      LIVE_PRICE.btcTs = Date.now();
+    } else if (type === 'gmt' && payload.data && typeof payload.data.value === 'number') {
+      LIVE_PRICE.gmt = payload.data.value;
+      LIVE_PRICE.gmtTs = Date.now();
+    } else {
+      return;
+    }
+    log('Prix live reçu:', type, payload.data);
+    document.querySelectorAll('[data-gm-upgrade-panel]').forEach((panel) => {
+      updateLivePriceAnnotations(panel);
+    });
+  }
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window && event.source !== null) return;
+    const msg = event.data;
+    if (!msg || msg.source !== 'gm-companion-live-price') return;
+    handleLivePrice(msg.type, msg.payload);
+  });
+
+  /**
+   * Récupère directement les prix BTC/GMT (fallback si le hook n'a rien capté).
+   */
+  async function fetchLivePrices() {
+    try {
+      const [btcRes, gmtRes] = await Promise.all([
+        fetch(API_PRICE_URL).then((r) => r.json()).catch(() => null),
+        fetch(API_TOKEN_PRICE_URL).then((r) => r.json()).catch(() => null),
+      ]);
+      handleLivePrice('btc', btcRes);
+      handleLivePrice('gmt', gmtRes);
+    } catch (e) {
+      log('Impossible de récupérer les prix live:', e);
+    }
+  }
+
+  /**
+   * Prix GOMINING effectif : live capté → dérivé du calculateur → défaut.
+   */
+  function resolveGmtPrice(panel) {
+    if (LIVE_PRICE.gmt) return LIVE_PRICE.gmt;
+    const reward = panel?._gmReward;
+    if (reward?.gmtPrice) return reward.gmtPrice;
+    return DEFAULT_GMT_PRICE;
+  }
+
+  /**
+   * Extrait les données du calculateur de récompenses GoMining présent
+   * sur la page détail (pool payout, maintenance, net, prix BTC, période).
+   * @returns {Object|null}
+   */
+  function extractRewardCalculatorData() {
+    try {
+      const calc = document.querySelector('nft-reward-calculator');
+      if (!calc) return null;
+
+      const incomeEl = calc.querySelector('[data-qa="card-reward-calculator__value-income"]');
+      const feeEl = calc.querySelector('[data-qa="card-reward-calculator__value-fee"]');
+      const netEl = calc.querySelector('[data-qa="card-reward-calculator__value-netIncome"]');
+      if (!incomeEl || !feeEl || !netEl) return null;
+
+      const period = calc.querySelector('.btn.active .btn__text')?.textContent.trim() || 'Monthly';
+      const factor = period === 'Daily' ? 1 : period === 'Yearly' ? DAYS_PER_YEAR : DAYS_PER_MONTH;
+
+      // Prix BTC sélectionné dans le calculateur (ex: "$90,000")
+      const btcEl = calc.querySelector('ng-select.miner-create-modal__select-price .ng-value');
+      const btcPrice = btcEl ? parseNumber(btcEl.textContent) : null;
+
+      // Montant brut en BTC (plus précis que le $ arrondi)
+      const btcAmountEl = calc.querySelector('currency-display .fw-semibold');
+      const grossBtc = btcAmountEl ? parseFloat(String(btcAmountEl.textContent).replace(/[^0-9.]/g, '')) : null;
+
+      // Montant de la maintenance en GMT (2e currency-display du calculateur)
+      const gmtAmountEl = calc.querySelectorAll('currency-display .fw-semibold')[1];
+      const feeGmt = gmtAmountEl ? parseFloat(String(gmtAmountEl.textContent).replace(/[^0-9.]/g, '')) : null;
+
+      const fee = parseNumber(feeEl.textContent);
+      const gmtPrice = fee && feeGmt ? fee / feeGmt : null;
+
+      return {
+        gross: parseNumber(incomeEl.textContent),
+        fee,
+        net: parseNumber(netEl.textContent),
+        btcPrice,
+        grossBtc,
+        feeGmt,
+        gmtPrice,
+        period,
+        factor,
+      };
+    } catch (e) {
+      log('Erreur extraction calculateur récompenses:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Déduit le coût kWh qui reproduit exactement la maintenance affichée
+   * par GoMining pour la configuration actuelle du mineur.
+   */
+  function deriveKwh(th, wth, feeDaily) {
+    if (!th || !wth || !feeDaily) return DEFAULT_KWH;
+    const service = SERVICE_FEE_PER_TH * th;
+    const kwh = ((feeDaily - service) * 1000) / (24 * wth * th);
+    if (!isFinite(kwh)) return DEFAULT_KWH;
+    return Math.min(0.15, Math.max(0.01, kwh));
+  }
+
+  /**
+   * Calcule le rendement journalier/mensuel/annuel selon les formules GoMining.
+   * @param {Object} params
+   * @returns {Object}
+   */
+  function computeYield({ th, wth, btcPrice, satsPerThDay, kwhCost, discountPct = 0 }) {
+    discountPct = Math.min(100, Math.max(0, discountPct));
+    const grossDaily = (satsPerThDay * th * btcPrice) / 1e8;
+    const electricityDaily = (kwhCost * 24 * wth * th) / 1000;
+    const serviceDaily = SERVICE_FEE_PER_TH * th;
+    const maintenanceDaily = (electricityDaily + serviceDaily) * (1 - discountPct / 100);
+    const netDaily = Math.max(0, grossDaily - maintenanceDaily);
+
+    return {
+      grossDaily,
+      electricityDaily,
+      serviceDaily,
+      maintenanceDaily,
+      netDaily,
+      grossMonthly: grossDaily * DAYS_PER_MONTH,
+      netMonthly: netDaily * DAYS_PER_MONTH,
+      grossYearly: grossDaily * DAYS_PER_YEAR,
+      netYearly: netDaily * DAYS_PER_YEAR,
+    };
+  }
+
   // ─── Extraction des données d'une card ──────────────────────────
 
   /**
@@ -559,9 +780,10 @@
   /**
    * Construit le bloc HTML du calculateur d'upgrade
    * @param {Object} data
+   * @param {Object|null} reward - données du calculateur de récompenses
    * @returns {string}
    */
-  function buildUpgradePanelHtml(data) {
+  function buildUpgradePanelHtml(data, reward) {
     const { th, wth, priceUsd } = data;
 
     const costTo15 = computeUpgradeCost(wth, th, TARGET_EFFICIENCY_15);
@@ -640,6 +862,7 @@
         </div>
         ${quickCards}
         ${calculator}
+        ${buildYieldSimHtml(data, reward)}
       </div>`;
   }
 
@@ -660,6 +883,7 @@
         el.textContent = '—';
       });
       renderStrategies(panel, null);
+      updateYieldSim(panel, data);
       return;
     }
 
@@ -677,6 +901,7 @@
     }
 
     renderStrategies(panel, strategies, target);
+    updateYieldSim(panel, data);
   }
 
   /**
@@ -732,10 +957,224 @@
   }
 
   /**
-   * Injecte le panneau d'upgrade sous .catalog-item__description--last
+   * Construit le HTML du simulateur de rendement.
+   * Pré-rempli avec les valeurs extraites du calculateur GoMining.
+   * @param {Object} data
+   * @param {Object|null} reward
+   * @returns {string}
+   */
+  function buildYieldSimHtml(data, reward) {
+    const { th, wth } = data;
+
+    const btcPrice = reward?.btcPrice ?? 90000;
+    const satsPerThDay = reward && reward.gross && btcPrice
+      ? (reward.gross / reward.factor) / btcPrice / th * 1e8
+      : 45;
+    const kwh = reward ? deriveKwh(th, wth, reward.fee / reward.factor) : DEFAULT_KWH;
+
+    const field = (key, label, value, step) => `
+      <div class="${YIELD_SIM_CLASS}__field">
+        <label class="${YIELD_SIM_CLASS}__label" for="gm-sim-${key}">${label}</label>
+        <input class="${YIELD_SIM_CLASS}__input" id="gm-sim-${key}" data-gm-sim-input="${key}" type="number" step="${step}" min="0" value="${value}">
+      </div>`;
+
+    const row = (label, key, highlight, withCurr) => `
+      <div class="${YIELD_SIM_CLASS}__row${highlight ? ` ${YIELD_SIM_CLASS}__row--highlight` : ''}">
+        <span>${label}</span>
+        <span class="${YIELD_SIM_CLASS}__row-value">
+          <span data-gm-sim-value="${key}">—</span>
+          ${withCurr ? `<span class="${YIELD_SIM_CLASS}__cur" data-gm-sim-cur="${key}"></span>` : ''}
+        </span>
+      </div>`;
+
+    const col = (title, prefix, isTarget) => `
+      <div class="${YIELD_SIM_CLASS}__col${isTarget ? ` ${YIELD_SIM_CLASS}__col--target` : ''}">
+        <div class="${YIELD_SIM_CLASS}__col-title">${title}</div>
+        ${row('Revenu brut / jour', `${prefix}-gross-d`)}
+        ${row('Électricité / jour', `${prefix}-elec-d`, false, true)}
+        ${row('Service / jour', `${prefix}-serv-d`, false, true)}
+        ${row('Maintenance / jour', `${prefix}-maint-d`, false, true)}
+        ${row('Net / jour', `${prefix}-net-d`, true)}
+        ${row('Net / mois', `${prefix}-net-m`)}
+        ${row('Net / an', `${prefix}-net-y`, true)}
+        ${row('ROI annuel', `${prefix}-roi`)}
+        ${row('Récupération', `${prefix}-payback`)}
+      </div>`;
+
+    return `
+      <div class="${YIELD_SIM_CLASS}" data-gm-yield-sim>
+        <div class="${YIELD_SIM_CLASS}__header">
+          <span class="${YIELD_SIM_CLASS}__title">📈 Simulateur de rendement</span>
+          <span class="${YIELD_SIM_CLASS}__subtitle">${th} TH → ${wth} W/TH</span>
+        </div>
+        <div class="${YIELD_SIM_CLASS}__params">
+          ${field('btc', `Prix BTC ($) <span class="${YIELD_SIM_CLASS}__live" data-gm-sim-live-btc></span>`, btcPrice, '1')}
+          ${field('sats', 'Rendement (sats/TH/j)', satsPerThDay.toFixed(1), '0.1')}
+          ${field('kwh', 'Coût kWh ($)', kwh.toFixed(4), '0.0001')}
+          ${field('discount', 'Remise maint. (%)', 0, '0.5')}
+        </div>
+        <div class="${YIELD_SIM_CLASS}__currency">
+          <span class="${YIELD_SIM_CLASS}__label">Maintenance en</span>
+          <div class="${YIELD_SIM_CLASS}__tabs">
+            <button type="button" class="${YIELD_SIM_CLASS}__tab active" data-gm-sim-currency="GMT">GOMINING</button>
+            <button type="button" class="${YIELD_SIM_CLASS}__tab" data-gm-sim-currency="BTC">BTC</button>
+          </div>
+          <span class="${YIELD_SIM_CLASS}__live" data-gm-sim-live-gmt></span>
+        </div>
+        <div class="${YIELD_SIM_CLASS}__compare">
+          ${col('Actuel', 'cur')}
+          ${col('Après upgrade', 'tgt', true)}
+        </div>
+        <div class="${YIELD_SIM_CLASS}__delta">
+          <span>Gain net après upgrade</span>
+          <span class="${YIELD_SIM_CLASS}__row-value ${YIELD_SIM_CLASS}__delta-value" data-gm-sim-value="delta-net">—</span>
+        </div>
+        <div class="${YIELD_SIM_CLASS}__note">
+          Formules GoMining : brut = sats/TH/j × TH × BTC ; électricité = kWh × 24 × W/TH × TH ÷ 1000 ;
+          service = $0.0089/TH/j. ROI et délai basés sur le prix + coût d'upgrade.
+        </div>
+      </div>`;
+  }
+
+  /**
+   * Met à jour les valeurs du simulateur pour l'état actuel et après upgrade.
+   * @param {Element} panel
    * @param {Object} data
    */
-  function injectUpgradePanel(data) {
+  function updateYieldSim(panel, data) {
+    const sim = panel.querySelector('[data-gm-yield-sim]');
+    if (!sim) return;
+
+    const read = (key, fallback) => {
+      const el = sim.querySelector(`[data-gm-sim-input="${key}"]`);
+      const v = el ? parseFloat(el.value) : NaN;
+      return isNaN(v) || v < 0 ? fallback : v;
+    };
+
+    const btcPrice = read('btc', 90000);
+    const satsPerThDay = read('sats', 45);
+    const kwhCost = read('kwh', DEFAULT_KWH);
+    const discountPct = read('discount', 0);
+
+    // Devise d'affichage de la maintenance (GOMINING ou BTC)
+    const currency = sim.querySelector('[data-gm-sim-currency].active')?.dataset.gmSimCurrency || 'GMT';
+    const gmtPrice = resolveGmtPrice(panel);
+
+    const effSelect = panel.querySelector('#gm-efficiency');
+    const powerInput = panel.querySelector('#gm-power');
+    const targetEff = effSelect ? parseInt(effSelect.value, 10) : Math.floor(data.wth);
+    const targetTh = powerInput && !isNaN(parseFloat(powerInput.value)) && parseFloat(powerInput.value) > 0
+      ? parseFloat(powerInput.value)
+      : data.th;
+
+    const curYield = computeYield({ th: data.th, wth: data.wth, btcPrice, satsPerThDay, kwhCost, discountPct });
+    const tgtYield = computeYield({
+      th: targetTh,
+      wth: Math.min(targetEff, data.wth),
+      btcPrice,
+      satsPerThDay,
+      kwhCost,
+      discountPct,
+    });
+
+    const strategies = computeUpgradeStrategies(data, targetEff, targetTh);
+    const upgradeCost = strategies.cost;
+
+    const investCur = data.priceUsd ?? null;
+    const investTgt = data.priceUsd ? data.priceUsd + upgradeCost : (upgradeCost || null);
+
+    const roiPct = (invest, netYearly) => (invest ? (netYearly / invest) * 100 : null);
+    const fmtPayback = (invest, netDaily) => {
+      if (!invest || !netDaily || netDaily <= 0) return '—';
+      const days = invest / netDaily;
+      return days < 90 ? `${Math.round(days)} j` : `${(days / DAYS_PER_MONTH).toFixed(1)} mois`;
+    };
+
+    const fmtBtc = (v) => {
+      if (v >= 1) return v.toFixed(4);
+      return v.toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
+    };
+
+    const set = (key, value) => {
+      const el = sim.querySelector(`[data-gm-sim-value="${key}"]`);
+      if (el) el.textContent = value;
+    };
+
+    // Estimation de la maintenance dans la devise sélectionnée
+    const setCur = (key, usd) => {
+      const el = sim.querySelector(`[data-gm-sim-cur="${key}"]`);
+      if (!el) return;
+      el.textContent = currency === 'GMT'
+        ? `(${(usd / gmtPrice).toFixed(1)} GMT)`
+        : `(${fmtBtc(usd / btcPrice)} BTC)`;
+    };
+
+    const fill = (prefix, y, invest) => {
+      set(`${prefix}-gross-d`, fmt(y.grossDaily));
+      set(`${prefix}-elec-d`, fmt(y.electricityDaily));
+      set(`${prefix}-serv-d`, fmt(y.serviceDaily));
+      set(`${prefix}-maint-d`, fmt(y.maintenanceDaily));
+      set(`${prefix}-net-d`, fmt(y.netDaily));
+      set(`${prefix}-net-m`, fmt(y.netMonthly));
+      set(`${prefix}-net-y`, fmt(y.netYearly));
+      const roi = roiPct(invest, y.netYearly);
+      set(`${prefix}-roi`, roi !== null ? `${roi.toFixed(1)}%` : '—');
+      set(`${prefix}-payback`, fmtPayback(invest, y.netDaily));
+      setCur(`${prefix}-elec-d`, y.electricityDaily);
+      setCur(`${prefix}-serv-d`, y.serviceDaily);
+      setCur(`${prefix}-maint-d`, y.maintenanceDaily);
+    };
+
+    fill('cur', curYield, investCur);
+    fill('tgt', tgtYield, investTgt);
+
+    const delta = tgtYield.netDaily - curYield.netDaily;
+    const deltaEl = sim.querySelector('[data-gm-sim-value="delta-net"]');
+    if (deltaEl) {
+      deltaEl.textContent = `${delta >= 0 ? '+' : '−'}${fmt(Math.abs(delta))} / j`;
+      deltaEl.classList.toggle(`${YIELD_SIM_CLASS}__delta-value--negative`, delta < 0);
+    }
+  }
+
+  /**
+   * Rafraîchit les annotations de prix live (BTC/GMT) du simulateur.
+   * @param {Element} panel
+   */
+  function updateLivePriceAnnotations(panel) {
+    const sim = panel.querySelector('[data-gm-yield-sim]');
+    if (!sim) return;
+
+    const btcEl = sim.querySelector('[data-gm-sim-live-btc]');
+    if (btcEl) {
+      const btc = LIVE_PRICE.btc ?? panel._gmReward?.btcPrice ?? null;
+      btcEl.textContent = btc ? `(actuel : ${fmt(btc)})` : '';
+      btcEl.classList.toggle(`${YIELD_SIM_CLASS}__live--clickable`, btc !== null);
+      if (btc !== null) {
+        btcEl.setAttribute('role', 'button');
+        btcEl.setAttribute('tabindex', '0');
+        btcEl.title = 'Cliquer pour utiliser ce prix';
+      } else {
+        btcEl.removeAttribute('role');
+        btcEl.removeAttribute('tabindex');
+        btcEl.title = '';
+      }
+    }
+
+    const gmtEl = sim.querySelector('[data-gm-sim-live-gmt]');
+    if (gmtEl) {
+      const gmt = resolveGmtPrice(panel);
+      gmtEl.textContent = `GOMINING : $${(gmt ?? DEFAULT_GMT_PRICE).toFixed(4)}`;
+    }
+
+    updateYieldSim(panel, panel._gmData);
+  }
+
+  /**
+   * Injecte le panneau d'upgrade sous .catalog-item__description--last
+   * @param {Object} data
+   * @param {Object|null} reward - données du calculateur de récompenses
+   */
+  function injectUpgradePanel(data, reward) {
     const container = document.querySelector(`.${DETAIL_DESC_CLASS}`);
     if (!container) return;
 
@@ -743,8 +1182,11 @@
     if (existing?.hasAttribute('data-gm-upgrade-panel')) existing.remove();
 
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = buildUpgradePanelHtml(data);
+    wrapper.innerHTML = buildUpgradePanelHtml(data, reward);
     const panel = wrapper.firstElementChild;
+
+    panel._gmData = data;
+    panel._gmReward = reward;
 
     container.insertAdjacentElement('afterend', panel);
 
@@ -755,6 +1197,40 @@
     }
     if (powerInput) {
       powerInput.addEventListener('input', () => updateCalculator(panel, data));
+    }
+
+    // Inputs du simulateur de rendement → recalcul seul
+    panel.querySelectorAll('[data-gm-sim-input]').forEach((input) => {
+      input.addEventListener('input', () => updateYieldSim(panel, data));
+    });
+
+    // Onglets GOMINING / BTC (devise d'affichage de la maintenance)
+    panel.querySelectorAll('[data-gm-sim-currency]').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        panel.querySelectorAll('[data-gm-sim-currency]').forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        updateYieldSim(panel, data);
+      });
+    });
+
+    // Clic sur le prix live BTC → préremplit le champ "Prix BTC ($)"
+    const liveBtcEl = panel.querySelector('[data-gm-sim-live-btc]');
+    if (liveBtcEl) {
+      const applyLiveBtc = () => {
+        const live = LIVE_PRICE.btc ?? panel._gmReward?.btcPrice ?? null;
+        if (live === null) return;
+        const btcInput = panel.querySelector('#gm-sim-btc');
+        if (!btcInput) return;
+        btcInput.value = live.toFixed(2);
+        updateYieldSim(panel, data);
+      };
+      liveBtcEl.addEventListener('click', applyLiveBtc);
+      liveBtcEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          applyLiveBtc();
+        }
+      });
     }
 
     // Clic sur une carte rapide → présélectionne l'efficience cible dans le calculateur
@@ -778,6 +1254,7 @@
       });
     });
     updateCalculator(panel, data);
+    updateLivePriceAnnotations(panel);
   }
 
   function processMinerDetail() {
@@ -792,7 +1269,9 @@
     }
 
     log('Détail extrait:', data);
-    injectUpgradePanel(data);
+    const reward = extractRewardCalculatorData();
+    log('Calculateur récompenses extrait:', reward);
+    injectUpgradePanel(data, reward);
   }
 
   // ─── Observation du DOM (SPA + chargement dynamique) ────────────
@@ -867,8 +1346,18 @@
   async function init() {
     log('Chargé sur', window.location.href);
     await loadUpgradeCosts();
+    injectLivePriceHook();
     setupObserver();
     watchNavigation();
+
+    // Si l'interception n'a rien capté (appels déjà passés, CSP…),
+    // on récupère les prix directement (utile uniquement sur la page détail).
+    setTimeout(() => {
+      if (isMinerDetailPage() && (!LIVE_PRICE.btc || !LIVE_PRICE.gmt)) {
+        log('Prix live non captés via interception, récupération directe');
+        fetchLivePrices();
+      }
+    }, 3000);
 
     // Traitement initial (les mutations ne déclenchent pas forcément au chargement)
     if (isMinerDetailPage()) {

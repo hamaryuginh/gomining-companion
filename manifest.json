@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GoMining Companion",
-  "version": "1.1.1",
+  "version": "1.2.1",
   "description": "Analyse et enrichit le marketplace GoMining",
   "browser_specific_settings": {
     "gecko": {
@@ -14,7 +14,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://app.gomining.com/*"
+    "https://app.gomining.com/*",
+    "https://api.gomining.com/*"
   ],
   "content_scripts": [
     {

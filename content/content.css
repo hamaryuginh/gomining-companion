@@ -513,3 +513,324 @@ html.light .gm-upgrade-panel__strategy-total span:last-child {
 html.light .gm-upgrade-panel__strategies-note {
   color: #6b6480;
 }
+
+/* ─── Simulateur de rendement ───────────────────────────────────── */
+
+.gm-yield-sim {
+  margin-top: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 10px;
+}
+
+.gm-yield-sim__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.gm-yield-sim__title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #34d399;
+}
+
+.gm-yield-sim__subtitle {
+  font-size: 10px;
+  color: #9d93c0;
+}
+
+.gm-yield-sim__params {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.gm-yield-sim__field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gm-yield-sim__label {
+  font-size: 10px;
+  color: #9d93c0;
+}
+
+.gm-yield-sim__input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  color: #e6e0fb;
+  font-size: 12px;
+  padding: 6px 9px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.gm-yield-sim__input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+.gm-yield-sim__compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.gm-yield-sim__col {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(117, 64, 239, 0.2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gm-yield-sim__col--target {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.gm-yield-sim__col-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c4b5fd;
+  margin-bottom: 4px;
+}
+
+.gm-yield-sim__col--target .gm-yield-sim__col-title {
+  color: #34d399;
+}
+
+.gm-yield-sim__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  color: #9d93c0;
+  font-size: 11px;
+}
+
+.gm-yield-sim__row--highlight {
+  color: #e2d9ff;
+}
+
+.gm-yield-sim__row-value {
+  color: #e2d9ff;
+  font-weight: 600;
+}
+
+.gm-yield-sim__row--highlight .gm-yield-sim__row-value {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.gm-yield-sim__delta {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(16, 185, 129, 0.25);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #9d93c0;
+}
+
+.gm-yield-sim__delta-value {
+  color: #34d399;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gm-yield-sim__delta-value--negative {
+  color: #f87171;
+}
+
+.gm-yield-sim__note {
+  margin-top: 8px;
+  font-size: 10px;
+  color: #9d93c0;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Prix live + devise de maintenance */
+.gm-yield-sim__live {
+  font-size: 10px;
+  font-weight: 400;
+  font-style: italic;
+  color: #86efac;
+  white-space: nowrap;
+}
+
+.gm-yield-sim__live--clickable {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  transition: color 0.15s ease;
+}
+
+.gm-yield-sim__live--clickable:hover,
+.gm-yield-sim__live--clickable:focus-visible {
+  color: #fbbf24;
+  outline: none;
+}
+
+.gm-yield-sim__currency {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.gm-yield-sim__currency .gm-yield-sim__label {
+  font-size: 11px;
+}
+
+.gm-yield-sim__tabs {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.gm-yield-sim__tab {
+  background: transparent;
+  border: none;
+  border-radius: 6px !important;
+  color: #9d93c0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px !important;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.gm-yield-sim__tab:hover {
+  color: #e2d9ff;
+}
+
+.gm-yield-sim__tab.active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.gm-yield-sim__cur {
+  font-size: 10px;
+  font-weight: 500;
+  color: #9d93c0;
+  margin-left: 3px;
+}
+
+.gm-yield-sim__row--highlight .gm-yield-sim__cur {
+  color: #b8aedc;
+}
+
+html.light .gm-yield-sim__live {
+  color: #047857;
+}
+
+html.light .gm-yield-sim__live--clickable:hover,
+html.light .gm-yield-sim__live--clickable:focus-visible {
+  color: #b45309;
+}
+
+html.light .gm-yield-sim__tabs {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+html.light .gm-yield-sim__tab {
+  color: #6b6480;
+}
+
+html.light .gm-yield-sim__tab:hover {
+  color: #2b2740;
+}
+
+html.light .gm-yield-sim__tab.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+html.light .gm-yield-sim__cur {
+  color: #6b6480;
+}
+
+html.light .gm-yield-sim__row--highlight .gm-yield-sim__cur {
+  color: #4c4560;
+}
+
+html.light .gm-yield-sim {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+html.light .gm-yield-sim__title,
+html.light .gm-yield-sim__col--target .gm-yield-sim__col-title {
+  color: #047857;
+}
+
+html.light .gm-yield-sim__subtitle,
+html.light .gm-yield-sim__label,
+html.light .gm-yield-sim__row,
+html.light .gm-yield-sim__delta,
+html.light .gm-yield-sim__note {
+  color: #6b6480;
+}
+
+html.light .gm-yield-sim__input {
+  background: #ffffff;
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #2b2740;
+}
+
+html.light .gm-yield-sim__col {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(117, 64, 239, 0.2);
+}
+
+html.light .gm-yield-sim__col--target {
+  background: rgba(16, 185, 129, 0.08);
+}
+
+html.light .gm-yield-sim__col-title {
+  color: #5b21b6;
+}
+
+html.light .gm-yield-sim__row-value,
+html.light .gm-yield-sim__row--highlight {
+  color: #2b2740;
+}
+
+html.light .gm-yield-sim__row--highlight .gm-yield-sim__row-value {
+  color: #b45309;
+}
+
+html.light .gm-yield-sim__delta-value {
+  color: #047857;
+}
+
+html.light .gm-yield-sim__delta-value--negative {
+  color: #b91c1c;
+}
+
+@media (max-width: 480px) {
+
+  .gm-yield-sim__params,
+  .gm-yield-sim__compare {
+    grid-template-columns: 1fr;
+  }
+}

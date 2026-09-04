@@ -24,4 +24,6 @@ coût total pour passer à 15 W/TH, prix total upgradé, et prix par TH upgradé
 
 Les CGU de GoMining interdisent la collecte automatisée de données (scraping, parsing). Cette extension parse le DOM du marketplace pour calculer des métriques, ce qui pourrait techniquement relever de cette clause.
 
-En pratique, l'extension est **100% locale et read-only** : aucun appel réseau, aucune donnée stockée ou transmise, aucune automatisation d'actions. Elle ne crée aucune charge sur les serveurs de GoMining. Libre à toi de l'utiliser en connaissance de cause.
+En pratique, l'extension est **100% locale et read-only** : aucune donnée stockée ou transmise, aucune automatisation d'actions. Elle ne crée aucune charge sur les serveurs de GoMining.
+
+Pour afficher les prix live (BTC / GOMINING) du simulateur de rendement, l'extension **observe les appels API** que l'application effectue déjà (`/api/exchanges/getPrice`, `/api/exchanges/getTokenPrice`) en les écoutant dans la page — sans requête supplémentaire. En cas d'échec de l'observation (CSP, appels déjà passés), elle peut effectuer au plus une requête légère vers ces mêmes endpoints publics, sans données personnelles. Libre à toi de l'utiliser en connaissance de cause.
