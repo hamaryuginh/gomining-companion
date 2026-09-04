@@ -111,6 +111,8 @@
     GREEDY_DEFAULT_RATE: 0.4,     // % / semaine (résultats des votes veGOMINING)
     GREEDY_DEFAULT_DURATION: 12,  // en semaines
     GREEDY_MAX_ROWS: 60,
+    GREEDY_DEFAULT_TH_PRICE: 15,  // $/TH pour le réinvestissement (défaut)
+    GREEDY_MAX_SIM_DAYS: 36500,   // 100 ans : au-delà, pas hebdomadaires
 
     // ─── Endpoints de prix live ─────────────────────────────────────
     API_PRICE_URL: 'https://api.gomining.com/api/exchanges/getPrice?symbol=BTC&value=1',

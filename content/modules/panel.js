@@ -16,7 +16,7 @@
   const { computeUpgradeCost, computeUpgradeStrategies } = GM.costs;
   const { computeYield, resolveGmtPrice, LIVE_PRICE, onLivePrice } = GM.rewards;
   const { extractDetailData, extractRewardCalculatorData } = GM.extract;
-  const { buildGreedySimHtml, updateGreedySim } = GM.greedy;
+  const { buildGreedySimHtml, updateGreedySim, updateGreedyPrice, wireGreedySim } = GM.greedy;
 
   // ─── Calculateur d'upgrade ───────────────────────────────────────
 
@@ -141,6 +141,9 @@
     const effSelect = panel.querySelector('#gm-efficiency');
     const powerInput = panel.querySelector('#gm-power');
     if (!effSelect || !powerInput) return;
+
+    // Le prix du TH du simulateur Greedy suit efficience cible + puissance cible
+    updateGreedyPrice(panel, data);
 
     const target = parseInt(effSelect.value, 10);
     const power = parseFloat(powerInput.value);
@@ -491,10 +494,13 @@
     });
 
     // Inputs du simulateur Greedy Machines → recalcul de la table
-    panel.querySelectorAll('[data-gm-greedy-rate], [data-gm-greedy-duration], [data-gm-greedy-unit]').forEach((el) => {
+    panel.querySelectorAll('[data-gm-greedy-rate], [data-gm-greedy-duration], [data-gm-greedy-unit], [data-gm-greedy-reinvest], [data-gm-greedy-price]').forEach((el) => {
       el.addEventListener('input', () => updateGreedySim(panel, data));
       el.addEventListener('change', () => updateGreedySim(panel, data));
     });
+
+    // Popover de décomposition des gains Greedy / réinvestissement
+    wireGreedySim(panel);
 
     // Onglets GOMINING / BTC (devise d'affichage de la maintenance)
     panel.querySelectorAll('[data-gm-sim-currency]').forEach((tab) => {

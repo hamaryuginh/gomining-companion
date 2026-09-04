@@ -935,6 +935,79 @@ html.light .gm-yield-sim__delta-value--negative {
   min-width: 0;
 }
 
+.gm-greedy-sim__check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #e6e0fb;
+  cursor: pointer;
+  padding: 5px 0;
+}
+
+.gm-greedy-sim__check input {
+  accent-color: #f59e0b;
+  cursor: pointer;
+}
+
+.gm-greedy-sim--no-reinvest [data-gm-greedy-price-wrap] {
+  display: none;
+}
+
+.gm-greedy-sim__gain {
+  cursor: help;
+  border-bottom: 1px dotted rgba(134, 239, 172, 0.55);
+}
+
+.gm-greedy-sim__gain:hover,
+.gm-greedy-sim__gain:focus-visible {
+  color: #fcd34d;
+  outline: none;
+}
+
+.gm-greedy-sim__tooltip {
+  position: fixed;
+  z-index: 2147483647;
+  display: none;
+  min-width: 190px;
+  max-width: 270px;
+  padding: 8px 10px;
+  background: #1b1a2e;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  color: #e6e0fb;
+  pointer-events: none;
+}
+
+.gm-greedy-sim__tooltip.visible {
+  display: block;
+}
+
+.gm-greedy-sim__tooltip-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #fbbf24;
+  margin-bottom: 4px;
+}
+
+.gm-greedy-sim__tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 1px 0;
+}
+
+.gm-greedy-sim__tooltip-row b {
+  color: #86efac;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .gm-greedy-sim__table-wrap {
   overflow-x: auto;
   border: 1px solid rgba(245, 158, 11, 0.20);
@@ -959,7 +1032,7 @@ html.light .gm-yield-sim__delta-value--negative {
 }
 
 .gm-greedy-sim__table th:first-child {
-  text-align: left;
+  text-align: left !important;
 }
 
 .gm-greedy-sim__table td {
@@ -1065,6 +1138,30 @@ html.light .gm-greedy-sim__cell--pos {
 
 html.light .gm-greedy-sim__cell--neg {
   color: #b91c1c;
+}
+
+html.light .gm-greedy-sim__check {
+  color: #2b2740;
+}
+
+html.light .gm-greedy-sim__gain:hover,
+html.light .gm-greedy-sim__gain:focus-visible {
+  color: #92400e;
+}
+
+html.light .gm-greedy-sim__tooltip {
+  background: #ffffff;
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  color: #2b2740;
+}
+
+html.light .gm-greedy-sim__tooltip-title {
+  color: #b45309;
+}
+
+html.light .gm-greedy-sim__tooltip-row b {
+  color: #047857;
 }
 
 @media (max-width: 480px) {
