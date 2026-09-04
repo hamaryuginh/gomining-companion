@@ -23,6 +23,13 @@
         "https://app.gomining.com/*"
       ],
       "js": [
+        "content/utils.js",
+        "content/config.js",
+        "content/modules/costs.js",
+        "content/modules/rewards.js",
+        "content/modules/extract.js",
+        "content/modules/marketplace.js",
+        "content/modules/panel.js",
         "content/content.js"
       ],
       "css": [
