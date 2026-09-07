@@ -128,6 +128,25 @@ body {
   color: #e6e0fb;
 }
 
+.rv-sim__check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #e6e0fb;
+  cursor: pointer;
+  padding: 7px 0;
+}
+
+.rv-sim__check input {
+  accent-color: #f59e0b;
+  cursor: pointer;
+}
+
+[data-rv-greedy-fields].hidden {
+  display: none;
+}
+
 /* ─── Stratégies (temporalités) ─────────────────────────────────── */
 
 .rv-sim__strategies {
@@ -168,7 +187,7 @@ body {
 }
 
 .rv-sim__strategy-hint {
-  font-size: 10px;
+  font-size: 11px;
   color: #6b6480;
   margin-top: -4px;
 }
@@ -270,7 +289,7 @@ body {
 .rv-sim__table th {
   background: rgba(255, 255, 255, 0.03);
   color: #9d93c0;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-align: right;
   padding: 6px 8px;
@@ -410,6 +429,80 @@ body {
   color: #c4b5fd;
 }
 
+/* ─── Détail des gains (+TH) ─────────────────────────────────────── */
+
+.rv-sim__gain {
+  cursor: help;
+  border-bottom: 1px dotted rgba(167, 139, 250, 0.55);
+}
+
+.rv-sim__gain:hover,
+.rv-sim__gain:focus-visible {
+  color: #fcd34d;
+  outline: none;
+}
+
+.rv-sim__gain-tip,
+.rv-sim__net-tip {
+  position: fixed;
+  z-index: 2147483647;
+  display: none;
+  min-width: 200px;
+  max-width: 280px;
+  padding: 8px 10px;
+  background: #1b1a2e;
+  border: 1px solid rgba(117, 64, 239, 0.45);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  color: #e6e0fb;
+  pointer-events: none;
+}
+
+.rv-sim__gain-tip.visible,
+.rv-sim__net-tip.visible {
+  display: block;
+}
+
+.rv-sim__gain-tip-title,
+.rv-sim__net-tip-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #a78bfa;
+  margin-bottom: 4px;
+}
+
+.rv-sim__gain-tip-row,
+.rv-sim__net-tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 1px 0;
+}
+
+.rv-sim__gain-tip-row b,
+.rv-sim__net-tip-row b {
+  color: #86efac;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ─── Cellule Net cumulé (popover) ───────────────────────────────── */
+
+.rv-sim__net {
+  cursor: help;
+  border-bottom: 1px dotted rgba(167, 139, 250, 0.55);
+}
+
+.rv-sim__net:hover,
+.rv-sim__net:focus-visible {
+  color: #fcd34d;
+  outline: none;
+}
+
 /* ─── Graphique ─────────────────────────────────────────────────── */
 
 .rv-sim__legend {
@@ -528,7 +621,7 @@ body {
 /* ─── Note ──────────────────────────────────────────────────────── */
 
 .rv-sim__note {
-  font-size: 10px;
+  font-size: 11px;
   color: #9d93c0;
   font-style: italic;
   line-height: 1.5;

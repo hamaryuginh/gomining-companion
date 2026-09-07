@@ -45,8 +45,6 @@
       [1536, 6.50943], [2560, 6.48099], [3584, 6.44811], [5000, 6.42670],
     ],
   };
-  const REF_EFFS = Object.keys(POWER_UPGRADE_COSTS).map(Number);
-
   const WEEKS_PER_UNIT = {
     day: 1 / 7,
     week: 1,
@@ -67,6 +65,10 @@
     reinvestUnit: 'month',
     classicDuration: 12,
     classicUnit: 'month',
+    greedy: false,
+    greedyTh: 0,
+    greedyRate: 0.4,
+    reinvestGreedy: false,
   };
 
   const COLORS = {
@@ -86,6 +88,10 @@
 
   function fmtTh(v) {
     return v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  }
+
+  function fmtThFixed(v) {
+    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function fmtSigned(v) {
@@ -135,25 +141,56 @@
    * classique) : pendant la phase de réinvestissement le gain net est converti
    * en puissance au prix du TH (cash à 0) ; ensuite les gains sont retirés
    * (cash). Le mode classique pur = runTimeline(..., rDays = 0).
-   * @returns {Object} { powerArr, cashArr, stride, days }
+   * Les Greedy Machines (puissance initiale greedyTh) croissent chaque semaine
+   * au taux greedyDailyRate (votes veGOMINING), indépendamment de la stratégie ;
+   * le rendement est calculé sur la puissance totale (ferme + Greedy).
+   * Si reinvestGreedy, les TH achetés entrent dans la collection Greedy (et
+   * bénéficient de sa croissance) ; sinon ils entrent dans la ferme.
+   * organicArr suit la croissance pure des Greedy (sans réinvestissement),
+   * pour décomposer les gains ; netArr cumule le net généré (indépendamment
+   * de sa destination : réinvesti ou retiré).
+   * @returns {Object} { powerArr, farmArr, greedyArr, organicArr, cashArr, netArr, stride, days }
    */
-  function runTimeline(baseTh, netDailyFor, thPrice, reinvest, rDays, cDays, stride) {
+  function runTimeline(baseTh, netDailyFor, thPrice, reinvest, rDays, cDays, stride, greedyTh, greedyDailyRate, reinvestGreedy) {
     const days = rDays + cDays;
     const n = Math.ceil(days / stride);
     const powerArr = new Float64Array(n + 1);
+    const farmArr = new Float64Array(n + 1);
+    const greedyArr = new Float64Array(n + 1);
+    const organicArr = new Float64Array(n + 1);
     const cashArr = new Float64Array(n + 1);
-    powerArr[0] = baseTh;
-    let power = baseTh;
+    const netArr = new Float64Array(n + 1);
+    let farm = baseTh;
+    let greedy = greedyTh || 0;
+    let organic = greedyTh || 0;
     let cash = 0;
+    let cumNet = 0;
+    powerArr[0] = farm + greedy;
+    farmArr[0] = farm;
+    greedyArr[0] = greedy;
+    organicArr[0] = organic;
+    const stepGrowth = Math.pow(1 + (greedyDailyRate || 0), stride);
     for (let k = 1; k <= n; k++) {
       const day = k * stride;
-      const net = netDailyFor(power) * stride;
-      if (reinvest && day <= rDays) power += net / thPrice;
-      else cash += net;
-      powerArr[k] = power;
+      greedy *= stepGrowth;
+      organic *= stepGrowth;
+      const total = farm + greedy;
+      const net = netDailyFor(total) * stride;
+      cumNet += net;
+      if (reinvest && day <= rDays) {
+        if (reinvestGreedy) greedy += net / thPrice;
+        else farm += net / thPrice;
+      } else {
+        cash += net;
+      }
+      powerArr[k] = farm + greedy;
+      farmArr[k] = farm;
+      greedyArr[k] = greedy;
+      organicArr[k] = organic;
       cashArr[k] = cash;
+      netArr[k] = cumNet;
     }
-    return { powerArr, cashArr, stride, days };
+    return { powerArr, farmArr, greedyArr, organicArr, cashArr, netArr, stride, days };
   }
 
   /**
@@ -162,9 +199,9 @@
    * L'axe suit l'unité la plus fine des deux temporalités.
    */
   function compute(params) {
-    const { th, eff, discountPct, thPrice, btcPrice, sats, kwh } = params;
+    const { th, eff, discount, thPrice, btcPrice, sats, kwh } = params;
     const netDailyFor = (th) => computeNetDaily({
-      th, wth: eff, btcPrice, satsPerThDay: sats, kwhCost: kwh, discountPct,
+      th, wth: eff, btcPrice, satsPerThDay: sats, kwhCost: kwh, discountPct: discount,
     });
 
     const rDays = Math.round(params.reinvestDuration * WEEKS_PER_UNIT[params.reinvestUnit] * 7);
@@ -183,10 +220,13 @@
     if (!periods.length || periods[periods.length - 1] !== horizonUnits) periods.push(horizonUnits);
 
     const reinvestActive = thPrice > 0;
-    const simH = runTimeline(th, netDailyFor, thPrice, reinvestActive, rDays, cDays, stride);
-    const simC = runTimeline(th, netDailyFor, thPrice, false, 0, totalDays, stride);
+    const greedyTh = params.greedy ? params.greedyTh : 0;
+    const greedyDailyRate = params.greedy ? Math.pow(1 + (params.greedyRate || 0) / 100, 1 / 7) - 1 : 0;
+    const reinvestGreedy = params.greedy && params.reinvestGreedy;
+    const simH = runTimeline(th, netDailyFor, thPrice, reinvestActive, rDays, cDays, stride, greedyTh, greedyDailyRate, reinvestGreedy);
+    const simC = runTimeline(th, netDailyFor, thPrice, false, 0, totalDays, stride, greedyTh, greedyDailyRate, false);
 
-    return { params, rDays, cDays, totalDays, stride, axisUnit, axisDays, periods, step, simH, simC };
+    return { params, rDays, cDays, totalDays, stride, axisUnit, axisDays, periods, step, simH, simC, greedyTh };
   }
 
   const valueAt = (sim, day) => (day <= sim.days ? sim.powerArr[Math.round(day / sim.stride)] : null);
@@ -208,37 +248,68 @@
     return null;
   }
 
-  function renderTable(computed) {
-    const { params, rDays, totalDays, stride, axisUnit, axisDays, periods, step, simH, simC } = computed;
-    const { th, thPrice } = params;
-    const baseWealth = th * thPrice;
+function renderTable(computed) {
+    const { params, rDays, totalDays, stride, axisUnit, axisDays, periods, step, simH, simC, greedyTh } = computed;
+    const { th, thPrice, greedy } = params;
+    const baseTotal = th + greedyTh;
+    const baseWealth = baseTotal * thPrice;
+    const greedyActive = !!greedy;
     const crossingDay = findTableCrossing(simH, simC, rDays, totalDays, stride);
 
     const dayOf = (u) => Math.min(Math.round((u * axisDays) / stride) * stride, totalDays);
 
-    const buildRow = (u, day, isCross) => {
+    const buildRow = (u, day, isCross, prevDay) => {
       const idx = Math.round(day / stride);
+      const prevIdx = Math.round(prevDay / stride);
       const hPow = simH.powerArr[idx];
       const hCash = simH.cashArr[idx];
+      const cPow = simC.powerArr[idx];
       const cCash = simC.cashArr[idx];
       const hWealth = hPow * thPrice + hCash;
-      const cWealth = baseWealth + cCash;
+      const cWealth = cPow * thPrice + cCash;
       const delta = hWealth - cWealth;
-      const thBought = hPow - th;
+      const thBought = hPow - baseTotal;
       const rowClass = u === null ? 'rv-sim__row--switch' : (isCross ? 'rv-sim__row--crossing' : '');
       const crossAttrs = isCross
         ? ` data-rv-cross-h="${hCash.toFixed(2)}" data-rv-cross-c="${cCash.toFixed(2)}"`
         : '';
 
+      const reinvestFarm = simH.farmArr[idx] - th;
+      const greedyOrganicGain = simH.organicArr[idx] - greedyTh;
+      const greedyReinvestGain = simH.greedyArr[idx] - simH.organicArr[idx];
+      const pctOf = (v) => ((v / Math.max(1, baseTotal)) * 100).toFixed(2);
+      const gainCell = greedyActive
+        ? `<span class="rv-sim__gain" tabindex="0" role="button"
+              data-rv-farm-th="${reinvestFarm.toFixed(2)}" data-rv-farm-pct="${pctOf(reinvestFarm)}"
+              data-rv-greedy-organic-th="${greedyOrganicGain.toFixed(2)}" data-rv-greedy-organic-pct="${pctOf(greedyOrganicGain)}"
+              data-rv-greedy-reinvest-th="${greedyReinvestGain.toFixed(2)}" data-rv-greedy-reinvest-pct="${pctOf(greedyReinvestGain)}">
+              <span class="rv-sim__cell--pos">+${fmtTh(thBought)}</span></span>`
+        : `<span class="rv-sim__cell--pos">+${fmtTh(thBought)}</span>`;
+
+      const netGenerated = simH.netArr[idx] - simH.netArr[prevIdx];
+      const netCash = simH.cashArr[idx] - simH.cashArr[prevIdx];
+      const netReinvested = netGenerated - netCash;
+      const netCell = netGenerated > 0.01
+        ? `<span class="rv-sim__net" tabindex="0" role="button"
+              data-rv-net-gen="${netGenerated.toFixed(2)}" data-rv-net-cash="${netCash.toFixed(2)}" data-rv-net-reinvest="${netReinvested.toFixed(2)}">${fmtMoney(hCash)}</span>`
+        : `${fmtMoney(hCash)}`;
+
+      const cNetGenerated = simC.netArr[idx] - simC.netArr[prevIdx];
+      const cNetCash = simC.cashArr[idx] - simC.cashArr[prevIdx];
+      const cNetCell = cNetGenerated > 0.01
+        ? `<span class="rv-sim__net" tabindex="0" role="button"
+              data-rv-net-gen="${cNetGenerated.toFixed(2)}" data-rv-net-cash="${cNetCash.toFixed(2)}" data-rv-net-reinvest="0.00">${fmtMoney(cCash)}</span>`
+        : `${fmtMoney(cCash)}`;
+
       return `
         <tr${rowClass ? ` class="${rowClass}"` : ''}${crossAttrs}>
-          <td${isCross ? ' class="rv-sim__tip-cell" tabindex="0"' : ''}>${u === null ? '⇄ Passage en classique' : `<span>${UNIT_LABEL[axisUnit]} ${u}</span>`}</td>
+          <td${isCross ? ' class="rv-sim__tip-cell" tabindex="0"' : ''}>${u === null ? '⇄ Passage en classique' : `${UNIT_LABEL[axisUnit]} ${u}`}</td>
           <td>${fmtTh(hPow)}</td>
-          <td><span class="rv-sim__cell--pos">+${fmtTh(thBought)}</span></td>
-          <td>${fmtMoney(hCash)}</td>
+          <td>${gainCell}</td>
+          <td>${netCell}</td>
           <td><span class="rv-sim__cell--reinvest">${fmtMoney(hWealth)}</span></td>
-          <td>${fmtTh(th)}</td>
-          <td>${fmtMoney(cCash)}</td>
+          <td>${fmtTh(cPow)}</td>
+          <td>${cNetCell}</td>
           <td>${fmtMoney(cWealth)}</td>
           <td><span class="rv-sim__cell--${delta >= 0 ? 'pos' : 'neg'}">${fmtSigned(delta)}</span></td>
         </tr>`;
@@ -249,22 +320,23 @@
     rows.push(`
       <tr class="rv-sim__row--base">
         <td>Base</td>
-        <td>${fmtTh(th)}</td>
+        <td>${fmtTh(baseTotal)}</td>
         <td>—</td>
         <td>${fmtMoney(0)}</td>
         <td class="rv-sim__cell--reinvest">${fmtMoney(baseWealth)}</td>
-        <td>${fmtTh(th)}</td>
+        <td>${fmtTh(baseTotal)}</td>
         <td>${fmtMoney(0)}</td>
         <td>${fmtMoney(baseWealth)}</td>
         <td>${fmtMoney(0)}</td>
       </tr>`);
 
     let crossed = false;
-    for (const u of periods) {
-      const day = dayOf(u);
-      const isCross = crossingDay != null && !crossed && day >= crossingDay;
-      if (isCross) crossed = true;
-      rows.push(buildRow(u, day, isCross));
+    const rowSpecs = periods.map((u) => ({ u, day: dayOf(u) }));
+    for (const spec of rowSpecs) {
+      if (crossingDay != null && !crossed && spec.day >= crossingDay) {
+        spec.isCross = true;
+        crossed = true;
+      }
     }
 
     // Ligne de passage en classique, si la fin du réinvestissement ne tombe
@@ -273,7 +345,13 @@
     const gridDays = new Set(periods.map(dayOf));
     if (switchDay > 0 && switchDay < totalDays && !gridDays.has(switchDay)) {
       const before = periods.filter((u) => dayOf(u) < switchDay).length;
-      rows.splice(before + 1, 0, buildRow(null, switchDay));
+      rowSpecs.splice(before, 0, { u: null, day: switchDay });
+    }
+
+    let prevDay = 0;
+    for (const spec of rowSpecs) {
+      rows.push(buildRow(spec.u, spec.day, !!spec.isCross, prevDay));
+      prevDay = spec.day;
     }
 
     tbody.innerHTML = rows.join('');
@@ -292,6 +370,7 @@
     const { th, thPrice } = params;
     const n = totalDays;
     const hPower = new Float64Array(n + 1).fill(NaN);
+    const cPower = new Float64Array(n + 1).fill(NaN);
     const hCash = new Float64Array(n + 1).fill(NaN);
     const cCash = new Float64Array(n + 1).fill(NaN);
 
@@ -302,15 +381,16 @@
     }
     for (let k = 0; k <= simC.days / stride; k++) {
       const d = k * stride;
+      cPower[d] = simC.powerArr[k];
       cCash[d] = simC.cashArr[k];
     }
     for (let d = 1; d <= n; d++) {
       if (isNaN(hPower[d])) hPower[d] = hPower[d - 1];
+      if (isNaN(cPower[d])) cPower[d] = cPower[d - 1];
       if (isNaN(hCash[d])) hCash[d] = hCash[d - 1];
       if (isNaN(cCash[d])) cCash[d] = cCash[d - 1];
     }
 
-    const cPower = new Float64Array(n + 1).fill(th);
     const hWealth = new Float64Array(n + 1);
     const cWealth = new Float64Array(n + 1);
     for (let d = 0; d <= n; d++) {
@@ -679,6 +759,127 @@
     tbody.addEventListener('focusout', hideTableTip);
   }
 
+  // ─── Popover de répartition des gains (+TH) ───────────────────────
+
+  let gainTip = null;
+
+  function getGainTip() {
+    if (gainTip) return gainTip;
+    gainTip = document.createElement('div');
+    gainTip.className = 'rv-sim__gain-tip';
+    document.body.appendChild(gainTip);
+    return gainTip;
+  }
+
+  function positionGainTip(e, tip) {
+    const pad = 12;
+    const left = e.clientX + pad;
+    tip.style.left = `${Math.min(left, window.innerWidth - tip.offsetWidth - pad)}px`;
+    tip.style.top = `${e.clientY + pad}px`;
+  }
+
+  function showGainTip(e, el) {
+    const d = el.dataset;
+    if (d.rvFarmTh === undefined || d.rvGreedyOrganicTh === undefined) return;
+    const tip = getGainTip();
+    const rows = [];
+    rows.push(`<div class="rv-sim__gain-tip-row">🐺 Greedy (upgrade) : <b>+${fmtThFixed(parseFloat(d.rvGreedyOrganicTh))} TH (+${d.rvGreedyOrganicPct}%)</b></div>`);
+    if (parseFloat(d.rvFarmTh) > 0.01) {
+      rows.push(`<div class="rv-sim__gain-tip-row">💸 Réinvest. ferme : <b>+${fmtThFixed(parseFloat(d.rvFarmTh))} TH (+${d.rvFarmPct}%)</b></div>`);
+    }
+    if (d.rvGreedyReinvestTh !== undefined && parseFloat(d.rvGreedyReinvestTh) > 0.01) {
+      rows.push(`<div class="rv-sim__gain-tip-row">🔄 Réinvest. Greedy : <b>+${fmtThFixed(parseFloat(d.rvGreedyReinvestTh))} TH (+${d.rvGreedyReinvestPct}%)</b></div>`);
+    }
+    tip.innerHTML = `
+      <div class="rv-sim__gain-tip-title">Répartition des gains</div>
+      ${rows.join('')}`;
+    tip.classList.add('visible');
+    positionGainTip(e, tip);
+  }
+
+  function hideGainTip() {
+    if (gainTip) gainTip.classList.remove('visible');
+  }
+
+  function wireGainTip() {
+    tbody.addEventListener('mouseover', (e) => {
+      const gain = e.target.closest('.rv-sim__gain');
+      if (!gain) { hideGainTip(); return; }
+      showGainTip(e, gain);
+    });
+    tbody.addEventListener('mousemove', (e) => {
+      if (gainTip && gainTip.classList.contains('visible')) positionGainTip(e, gainTip);
+    });
+    tbody.addEventListener('mouseleave', hideGainTip);
+    tbody.addEventListener('focusin', (e) => {
+      const gain = e.target.closest('.rv-sim__gain');
+      if (gain) {
+        const rect = gain.getBoundingClientRect();
+        showGainTip({ clientX: rect.right, clientY: rect.top }, gain);
+      }
+    });
+    tbody.addEventListener('focusout', hideGainTip);
+  }
+
+  // ─── Popover du net de la période ─────────────────────────────────
+
+  let netTip = null;
+
+  function getNetTip() {
+    if (netTip) return netTip;
+    netTip = document.createElement('div');
+    netTip.className = 'rv-sim__net-tip';
+    document.body.appendChild(netTip);
+    return netTip;
+  }
+
+  function positionNetTip(e, tip) {
+    const pad = 12;
+    const left = e.clientX + pad;
+    tip.style.left = `${Math.min(left, window.innerWidth - tip.offsetWidth - pad)}px`;
+    tip.style.top = `${e.clientY + pad}px`;
+  }
+
+  function showNetTip(e, el) {
+    const d = el.dataset;
+    if (d.rvNetGen === undefined) return;
+    const tip = getNetTip();
+    const gen = parseFloat(d.rvNetGen);
+    const cash = parseFloat(d.rvNetCash);
+    const reinvest = parseFloat(d.rvNetReinvest);
+    tip.innerHTML = `
+      <div class="rv-sim__net-tip-title">Net de la période</div>
+      <div class="rv-sim__net-tip-row">📈 Net généré : <b>+${fmtMoney(gen)}</b></div>
+      ${reinvest > 0.01 ? `<div class="rv-sim__net-tip-row">🔄 Réinvesti en TH : <b>${fmtMoney(reinvest)}</b></div>` : ''}
+      ${cash > 0.01 ? `<div class="rv-sim__net-tip-row">💵 Retiré (cash) : <b>${fmtMoney(cash)}</b></div>` : ''}`;
+    tip.classList.add('visible');
+    positionNetTip(e, tip);
+  }
+
+  function hideNetTip() {
+    if (netTip) netTip.classList.remove('visible');
+  }
+
+  function wireNetTip() {
+    tbody.addEventListener('mouseover', (e) => {
+      const net = e.target.closest('.rv-sim__net');
+      if (!net) { hideNetTip(); return; }
+      showNetTip(e, net);
+    });
+    tbody.addEventListener('mousemove', (e) => {
+      if (netTip && netTip.classList.contains('visible')) positionNetTip(e, netTip);
+    });
+    tbody.addEventListener('mouseleave', hideNetTip);
+    tbody.addEventListener('focusin', (e) => {
+      const net = e.target.closest('.rv-sim__net');
+      if (net) {
+        const rect = net.getBoundingClientRect();
+        showNetTip({ clientX: rect.right, clientY: rect.top }, net);
+      }
+    });
+    tbody.addEventListener('focusout', hideNetTip);
+  }
+
   // ─── Rendu global ─────────────────────────────────────────────────
 
   function renderAll() {
@@ -690,6 +891,7 @@
       drawChart();
     }
     updateWarning(params);
+    updateGreedyVisibility(params);
   }
 
   function updateWarning(params) {
@@ -697,17 +899,24 @@
     warn.classList.toggle('hidden', params.thPrice > 0);
   }
 
+  function updateGreedyVisibility(params) {
+    simEl.querySelectorAll('[data-rv-greedy-fields]').forEach((el) => {
+      el.classList.toggle('hidden', !params.greedy);
+    });
+  }
+
   // ─── Entrées & persistance ────────────────────────────────────────
 
   function readParams() {
     const p = {};
     for (const el of simEl.querySelectorAll('[data-rv]')) {
-      if (el.tagName === 'SELECT') p[el.dataset.rv] = el.value;
+      if (el.type === 'checkbox') p[el.dataset.rv] = el.checked;
+      else if (el.tagName === 'SELECT') p[el.dataset.rv] = el.value;
       else p[el.dataset.rv] = parseFloat(el.value);
     }
     const clean = { ...DEFAULT_PARAMS, ...p };
     clean.th = Math.max(0, clean.th || 0);
-    clean.eff = REF_EFFS.includes(clean.eff) ? clean.eff : 15;
+    clean.eff = Math.max(0, clean.eff || 15);
     clean.discount = clamp(clean.discount || 0, 0, 100);
     clean.thPrice = Math.max(0, clean.thPrice || 0);
     clean.btcPrice = Math.max(0, clean.btcPrice || 0);
@@ -717,13 +926,19 @@
     clean.classicDuration = Math.max(1, Math.floor(clean.classicDuration) || 1);
     clean.reinvestUnit = WEEKS_PER_UNIT[clean.reinvestUnit] ? clean.reinvestUnit : 'month';
     clean.classicUnit = WEEKS_PER_UNIT[clean.classicUnit] ? clean.classicUnit : 'month';
+    clean.greedy = !!clean.greedy;
+    clean.greedyTh = Math.max(0, clean.greedyTh || 0);
+    clean.greedyRate = Math.max(0, clean.greedyRate || 0);
+    clean.reinvestGreedy = !!clean.reinvestGreedy;
     return clean;
   }
 
   function applyParamsToDom(p) {
     for (const el of simEl.querySelectorAll('[data-rv]')) {
       const key = el.dataset.rv;
-      if (p[key] !== undefined) el.value = p[key];
+      if (p[key] === undefined) continue;
+      if (el.type === 'checkbox') el.checked = !!p[key];
+      else el.value = p[key];
     }
   }
 
@@ -797,6 +1012,8 @@
     });
 
     wireTableTip();
+    wireGainTip();
+    wireNetTip();
 
     // Entrées
     simEl.addEventListener('input', (e) => {

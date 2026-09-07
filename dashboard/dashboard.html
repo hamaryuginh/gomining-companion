@@ -28,15 +28,11 @@
           </div>
           <div class="rv-sim__field">
             <label class="rv-sim__label" for="rv-eff">Efficience (W/TH)</label>
-            <select class="rv-sim__select" id="rv-eff" data-rv="eff">
-              <option value="12">12</option>
-              <option value="15">15</option>
-              <option value="20">20</option>
-            </select>
+            <input class="rv-sim__input" id="rv-eff" data-rv="eff" type="number" min="0" step="0.1">
           </div>
           <div class="rv-sim__field">
             <label class="rv-sim__label" for="rv-discount">Remise maintenance (%)</label>
-            <input class="rv-sim__input" id="rv-discount" data-rv="discount" type="number" min="0" max="100" step="0.5">
+            <input class="rv-sim__input" id="rv-discount" data-rv="discount" type="number" min="0" max="100" step="0.1">
           </div>
           <div class="rv-sim__field">
             <label class="rv-sim__label" for="rv-th-price">Prix du TH ($)</label>
@@ -48,11 +44,33 @@
           </div>
           <div class="rv-sim__field">
             <label class="rv-sim__label" for="rv-sats">Rendement réseau (sats/TH/jour)</label>
-            <input class="rv-sim__input" id="rv-sats" data-rv="sats" type="number" min="0" step="0.5">
+            <input class="rv-sim__input" id="rv-sats" data-rv="sats" type="number" min="0" step="0.1">
           </div>
           <div class="rv-sim__field">
             <label class="rv-sim__label" for="rv-kwh">Électricité ($/kWh)</label>
             <input class="rv-sim__input" id="rv-kwh" data-rv="kwh" type="number" min="0" step="0.005">
+          </div>
+          <div class="rv-sim__field">
+            <label class="rv-sim__label">Greedy Machines</label>
+            <label class="rv-sim__check">
+              <input type="checkbox" data-rv="greedy">
+              <span>Avec Greedy Machines</span>
+            </label>
+          </div>
+          <div class="rv-sim__field" data-rv-greedy-fields>
+            <label class="rv-sim__label" for="rv-greedy-th">Puissance des Greedy (TH)</label>
+            <input class="rv-sim__input" id="rv-greedy-th" data-rv="greedyTh" type="number" min="0" step="1">
+          </div>
+          <div class="rv-sim__field" data-rv-greedy-fields>
+            <label class="rv-sim__label" for="rv-greedy-rate">Power increase rate (% / semaine)</label>
+            <input class="rv-sim__input" id="rv-greedy-rate" data-rv="greedyRate" type="number" min="0" step="0.01">
+          </div>
+          <div class="rv-sim__field" data-rv-greedy-fields>
+            <label class="rv-sim__label">Réinvestissement</label>
+            <label class="rv-sim__check">
+              <input type="checkbox" data-rv="reinvestGreedy">
+              <span>Réinvest. dans Greedy</span>
+            </label>
           </div>
         </div>
 
@@ -63,7 +81,8 @@
             <div class="rv-sim__strategy-row">
               <label class="rv-sim__label" for="rv-reinvest-duration">Durée</label>
               <div class="rv-sim__duration">
-                <input class="rv-sim__input" id="rv-reinvest-duration" data-rv="reinvestDuration" type="number" min="1" step="1">
+                <input class="rv-sim__input" id="rv-reinvest-duration" data-rv="reinvestDuration" type="number" min="1"
+                  step="1">
                 <select class="rv-sim__select" data-rv="reinvestUnit" aria-label="Unité réinvestissement">
                   <option value="day">Jour(s)</option>
                   <option value="week">Semaine(s)</option>
@@ -79,7 +98,8 @@
             <div class="rv-sim__strategy-row">
               <label class="rv-sim__label" for="rv-classic-duration">Durée</label>
               <div class="rv-sim__duration">
-                <input class="rv-sim__input" id="rv-classic-duration" data-rv="classicDuration" type="number" min="1" step="1">
+                <input class="rv-sim__input" id="rv-classic-duration" data-rv="classicDuration" type="number" min="1"
+                  step="1">
                 <select class="rv-sim__select" data-rv="classicUnit" aria-label="Unité classique">
                   <option value="day">Jour(s)</option>
                   <option value="week">Semaine(s)</option>
@@ -156,7 +176,10 @@
           maintenance = électricité + service, remise déduite). La stratégie réinvestissement convertit
           le gain net quotidien en puissance au prix du TH indiqué (fixe sur la durée) pendant sa
           temporalité — le net cumulé reste à 0 car tout est réinvesti — puis repasse en retrait classique.
-          La stratégie classique retire les gains pendant toute la durée. Δ Patrimoine = patrimoine
+          La stratégie classique retire les gains pendant toute la durée. Avec l'option Greedy Machines,
+          la puissance de la collection augmente chaque semaine selon le taux indiqué (votes veGOMINING),
+          en plus du réinvestissement (survol des colonnes +TH pour le détail) ; « Réinvest. dans Greedy »
+          oriente le réinvestissement vers la collection Greedy. Δ Patrimoine = patrimoine
           réinvestissement − classique (ferme valorisée au prix du TH).
         </div>
       </section>
