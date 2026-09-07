@@ -1,0 +1,547 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #0f0f1a;
+  color: #e6e0fb;
+  min-height: 100vh;
+}
+
+.dash-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.dash-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(117, 64, 239, 0.35);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.dash-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #a78bfa;
+}
+
+.dash-subtitle {
+  font-size: 12px;
+  color: #9d93c0;
+}
+
+.dash-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dash-empty {
+  padding: 48px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(117, 64, 239, 0.35);
+  border-radius: 12px;
+  text-align: center;
+  color: #9d93c0;
+  font-size: 13px;
+}
+
+/* ─── Simulateur de réinvestissement ─────────────────────────────── */
+
+.rv-sim {
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(117, 64, 239, 0.10) 0%, rgba(117, 64, 239, 0.04) 100%);
+  border: 1px solid rgba(117, 64, 239, 0.35);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rv-sim__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rv-sim__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #a78bfa;
+}
+
+.rv-sim__subtitle {
+  font-size: 11px;
+  color: #9d93c0;
+}
+
+.rv-sim__params {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.rv-sim__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rv-sim__label {
+  font-size: 11px;
+  color: #9d93c0;
+}
+
+.rv-sim__input,
+.rv-sim__select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(117, 64, 239, 0.35);
+  border-radius: 8px;
+  color: #e6e0fb;
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.rv-sim__input:focus,
+.rv-sim__select:focus {
+  border-color: #7540ef;
+  box-shadow: 0 0 0 2px rgba(117, 64, 239, 0.25);
+}
+
+.rv-sim__select option {
+  background: #1b1a2e;
+  color: #e6e0fb;
+}
+
+/* ─── Stratégies (temporalités) ─────────────────────────────────── */
+
+.rv-sim__strategies {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.rv-sim__strategy {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(117, 64, 239, 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rv-sim__strategy--reinvest {
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+.rv-sim__strategy--classic {
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.rv-sim__strategy-title {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rv-sim__strategy--reinvest .rv-sim__strategy-title {
+  color: #a78bfa;
+}
+
+.rv-sim__strategy--classic .rv-sim__strategy-title {
+  color: #fbbf24;
+}
+
+.rv-sim__strategy-hint {
+  font-size: 10px;
+  color: #6b6480;
+  margin-top: -4px;
+}
+
+.rv-sim__strategy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rv-sim__strategy-row .rv-sim__label {
+  font-size: 12px;
+}
+
+.rv-sim__duration {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  max-width: 260px;
+}
+
+.rv-sim__duration .rv-sim__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.rv-sim__duration .rv-sim__select {
+  flex: 1.2;
+  min-width: 0;
+}
+
+/* ─── Onglets de vues ───────────────────────────────────────────── */
+
+.rv-sim__tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(117, 64, 239, 0.35);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.rv-sim__tab {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #9d93c0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.rv-sim__tab:hover {
+  color: #e2d9ff;
+}
+
+.rv-sim__tab.active {
+  background: rgba(117, 64, 239, 0.22);
+  color: #c4b5fd;
+}
+
+.rv-sim__view.hidden {
+  display: none;
+}
+
+.rv-sim__warning {
+  padding: 8px 12px;
+  background: rgba(245, 158, 11, 0.10);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 8px;
+  color: #fbbf24;
+  font-size: 11px;
+}
+
+.rv-sim__warning.hidden {
+  display: none;
+}
+
+/* ─── Table ─────────────────────────────────────────────────────── */
+
+.rv-sim__table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(117, 64, 239, 0.20);
+  border-radius: 8px;
+}
+
+.rv-sim__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.rv-sim__table th {
+  background: rgba(255, 255, 255, 0.03);
+  color: #9d93c0;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: right;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(117, 64, 239, 0.25);
+}
+
+.rv-sim__table th:first-child,
+.rv-sim__table td:first-child {
+  text-align: left;
+}
+
+.rv-sim__table .rv-sim__th--reinvest {
+  color: #a78bfa;
+  border-bottom-color: rgba(167, 139, 250, 0.3);
+}
+
+.rv-sim__table .rv-sim__th--classic {
+  color: #fbbf24;
+  border-bottom-color: rgba(251, 191, 36, 0.3);
+}
+
+.rv-sim__table td {
+  padding: 5px 8px;
+  text-align: right;
+  color: #e2d9ff;
+  border-bottom: 1px solid rgba(117, 64, 239, 0.10);
+}
+
+.rv-sim__table td:first-child {
+  color: #9d93c0;
+}
+
+.rv-sim__table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.rv-sim__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.rv-sim__row--base td {
+  background: rgba(117, 64, 239, 0.12);
+  font-weight: 600;
+}
+
+.rv-sim__row--switch td {
+  background: rgba(245, 158, 11, 0.10);
+}
+
+.rv-sim__row--switch td:first-child {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.rv-sim__row--crossing td {
+  background: rgba(134, 239, 172, 0.10) !important;
+}
+
+.rv-sim__row--crossing td:first-child {
+  color: #86efac;
+  font-weight: 700;
+  /* border-left: 2px solid #fbbf24; */
+}
+
+.rv-sim__row--crossing .rv-sim__tip-cell {
+  cursor: help;
+}
+
+.rv-sim__row--crossing .rv-sim__tip-cell>span {
+  border-bottom: 1px dotted rgba(134, 239, 172, 0.55);
+}
+
+/* ─── Popover ligne de croisement ────────────────────────────────── */
+
+.rv-sim__table-tip {
+  position: fixed;
+  z-index: 2147483647;
+  display: none;
+  min-width: 230px;
+  max-width: 320px;
+  padding: 8px 10px;
+  background: #1b1a2e;
+  border: 1px solid rgba(134, 239, 172, 0.45);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  color: #e6e0fb;
+  pointer-events: none;
+}
+
+.rv-sim__table-tip.visible {
+  display: block;
+}
+
+.rv-sim__table-tip-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #86efac;
+  margin-bottom: 4px;
+}
+
+.rv-sim__table-tip-text {
+  color: #9d93c0;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.rv-sim__table-tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 1px 0;
+}
+
+.rv-sim__table-tip-row b {
+  color: #e2d9ff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rv-sim__cell--muted {
+  color: #6b6480;
+}
+
+.rv-sim__cell--pos {
+  color: #86efac;
+}
+
+.rv-sim__cell--neg {
+  color: #f87171;
+}
+
+.rv-sim__cell--reinvest {
+  color: #c4b5fd;
+}
+
+/* ─── Graphique ─────────────────────────────────────────────────── */
+
+.rv-sim__legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #9d93c0;
+  margin-bottom: 6px;
+}
+
+.rv-sim__legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.rv-sim__legend-item--reinvest::before {
+  background: #a78bfa;
+}
+
+.rv-sim__legend-item--classic::before {
+  background: #fbbf24;
+}
+
+.rv-sim__charts {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rv-sim__chart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rv-sim__chart-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c4b5fd;
+}
+
+.rv-sim__chart-wrap {
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(117, 64, 239, 0.20);
+  border-radius: 8px;
+}
+
+.rv-sim__chart-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 200px;
+}
+
+.rv-sim__chart-tip {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  min-width: 170px;
+  padding: 8px 10px;
+  background: #1b1a2e;
+  border: 1px solid rgba(117, 64, 239, 0.45);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  font-size: 11px;
+  color: #e6e0fb;
+  z-index: 10;
+}
+
+.rv-sim__chart-tip.visible {
+  display: block;
+}
+
+.rv-sim__chart-tip-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #a78bfa;
+  margin-bottom: 4px;
+}
+
+.rv-sim__chart-tip-row {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 1px 0;
+}
+
+.rv-sim__chart-tip-row span {
+  color: #9d93c0;
+}
+
+.rv-sim__chart-tip-row b {
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.rv-sim__chart-tip-val--h {
+  color: #a78bfa;
+}
+
+.rv-sim__chart-tip-val--c {
+  color: #fbbf24;
+}
+
+/* ─── Note ──────────────────────────────────────────────────────── */
+
+.rv-sim__note {
+  font-size: 10px;
+  color: #9d93c0;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+
+  .rv-sim__params,
+  .rv-sim__strategies {
+    grid-template-columns: 1fr;
+  }
+
+  .rv-sim__duration {
+    max-width: none;
+  }
+}

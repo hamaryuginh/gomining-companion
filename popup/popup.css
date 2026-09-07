@@ -193,3 +193,26 @@ h1 {
 .recalc-btn.hidden {
   display: none;
 }
+
+/* ─── Bouton Outils ─────────────────────────────────────── */
+
+.tools-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  background: rgba(117, 64, 239, 0.12);
+  border: 1px solid rgba(117, 64, 239, 0.45);
+  border-radius: 6px;
+  color: #c4b5fd;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.tools-btn:hover {
+  background: rgba(117, 64, 239, 0.22);
+  border-color: #7540ef;
+  color: #e2d9ff;
+}

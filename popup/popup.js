@@ -177,5 +177,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   resetBtn.addEventListener('click', resetCosts);
   recalcBtn.addEventListener('click', saveAndRecalculate);
 
+  const toolsBtn = document.getElementById('tools-btn');
+  toolsBtn.addEventListener('click', () => {
+    api.tabs.create({ url: api.runtime.getURL('dashboard/dashboard.html') });
+  });
+
   await loadCosts();
 });
