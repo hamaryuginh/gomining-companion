@@ -8,6 +8,7 @@
 
   const GM = (globalThis.GM = globalThis.GM || {});
   const { C, log, fmt } = GM;
+  const t = GM.I18N.t;
   const { BADGE_CLASS, CARDS_CONTAINER_CLASS, TARGET_EFFICIENCY_15, TARGET_EFFICIENCY_12 } = C;
   const { computeUpgradeCost } = GM.costs;
   const { extractCardData } = GM.extract;
@@ -70,23 +71,23 @@
     if (isOptimal) {
       badge.innerHTML = `
         <div class="${BADGE_CLASS}__row ${BADGE_CLASS}__optimal">
-          <span>✅ Déjà optimal (${wth} W/TH)</span>
+          <span>${t('badge.alreadyOptimal', [wth])}</span>
           <span class="${BADGE_CLASS}__value">${fmt(priceUsdPTh)} / TH</span>
         </div>
       `;
     } else if (isPartiallyOptimal) {
       badge.innerHTML = `
-        <div class="${BADGE_CLASS}__title">⚡ Après upgrade → ${TARGET_EFFICIENCY_12} W/TH (optimal)</div>
+        <div class="${BADGE_CLASS}__title">${t('badge.afterUpgradeOptimal', [TARGET_EFFICIENCY_12])}</div>
         <div class="${BADGE_CLASS}__row">
-          <span class="${BADGE_CLASS}__label">Coût upgrade</span>
+          <span class="${BADGE_CLASS}__label">${t('common.upgradeCost')}</span>
           <span class="${BADGE_CLASS}__value">${fmt(upgradeCostTo12)}</span>
         </div>
         <div class="${BADGE_CLASS}__row">
-          <span class="${BADGE_CLASS}__label">Prix total</span>
+          <span class="${BADGE_CLASS}__label">${t('common.totalPrice')}</span>
           <span class="${BADGE_CLASS}__value">${fmt(totalPriceUpgradedTo12)}</span>
         </div>
         <div class="${BADGE_CLASS}__row ${BADGE_CLASS}__highlight">
-          <span class="${BADGE_CLASS}__label">$/TH upgradé</span>
+          <span class="${BADGE_CLASS}__label">${t('common.pricePerThUpgraded')}</span>
           <span class="${BADGE_CLASS}__value">${fmt(pricePerThUpgradedTo12)}</span>
         </div>
       `;
@@ -94,33 +95,33 @@
       badge.innerHTML = `
         <div class="${BADGE_CLASS}__container">
           <div class="${BADGE_CLASS}__wrapper">
-            <div class="${BADGE_CLASS}__title">⚡ Upgrade → ${TARGET_EFFICIENCY_15} W/TH</div>
+            <div class="${BADGE_CLASS}__title">${t('badge.upgradeTo', [TARGET_EFFICIENCY_15])}</div>
             <div class="${BADGE_CLASS}__row">
-              <span class="${BADGE_CLASS}__label">Coût upgrade</span>
+              <span class="${BADGE_CLASS}__label">${t('common.upgradeCost')}</span>
               <span class="${BADGE_CLASS}__value">${fmt(upgradeCostTo15)}</span>
             </div>
             <div class="${BADGE_CLASS}__row">
-              <span class="${BADGE_CLASS}__label">Prix total</span>
+              <span class="${BADGE_CLASS}__label">${t('common.totalPrice')}</span>
               <span class="${BADGE_CLASS}__value">${fmt(totalPriceUpgradedTo15)}</span>
             </div>
             <div class="${BADGE_CLASS}__row ${BADGE_CLASS}__highlight">
-              <span class="${BADGE_CLASS}__label">$/TH upgradé</span>
+              <span class="${BADGE_CLASS}__label">${t('common.pricePerThUpgraded')}</span>
               <span class="${BADGE_CLASS}__value">${fmt(pricePerThUpgradedTo15)}</span>
             </div>
           </div>
           <div class="${BADGE_CLASS}__separator"></div>
           <div class="${BADGE_CLASS}__wrapper">
-            <div class="${BADGE_CLASS}__title">⚡ Upgrade → ${TARGET_EFFICIENCY_12} W/TH</div>
+            <div class="${BADGE_CLASS}__title">${t('badge.upgradeTo', [TARGET_EFFICIENCY_12])}</div>
             <div class="${BADGE_CLASS}__row">
-              <span class="${BADGE_CLASS}__label">Coût upgrade</span>
+              <span class="${BADGE_CLASS}__label">${t('common.upgradeCost')}</span>
               <span class="${BADGE_CLASS}__value">${fmt(upgradeCostTo12)}</span>
             </div>
             <div class="${BADGE_CLASS}__row">
-              <span class="${BADGE_CLASS}__label">Prix total</span>
+              <span class="${BADGE_CLASS}__label">${t('common.totalPrice')}</span>
               <span class="${BADGE_CLASS}__value">${fmt(totalPriceUpgradedTo12)}</span>
             </div>
             <div class="${BADGE_CLASS}__row ${BADGE_CLASS}__highlight">
-              <span class="${BADGE_CLASS}__label">$/TH upgradé</span>
+              <span class="${BADGE_CLASS}__label">${t('common.pricePerThUpgraded')}</span>
               <span class="${BADGE_CLASS}__value">${fmt(pricePerThUpgradedTo12)}</span>
             </div>
           </div>

@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>GoMining Companion — Outils</title>
+  <title data-i18n="dash.title">GoMining Companion — Outils</title>
   <link rel="stylesheet" href="dashboard.css" />
 </head>
 
@@ -11,111 +11,111 @@
   <div class="dash-container">
     <header class="dash-header">
       <h1>⛏ GoMining Companion</h1>
-      <span class="dash-subtitle">Outils</span>
+      <span class="dash-subtitle" data-i18n="dash.subtitle">Outils</span>
     </header>
 
     <main class="dash-main">
       <section class="rv-sim" data-rv-sim>
         <div class="rv-sim__header">
-          <span class="rv-sim__title">🔄 Simulateur de réinvestissement</span>
-          <span class="rv-sim__subtitle">Réinvestir les gains en TH puis retirer (classique)</span>
+          <span class="rv-sim__title" data-i18n="rv.title">🔄 Simulateur de réinvestissement</span>
+          <span class="rv-sim__subtitle" data-i18n="rv.subtitle">Réinvestir les gains en TH puis retirer (classique)</span>
         </div>
 
         <div class="rv-sim__params">
           <div class="rv-sim__field">
-            <label class="rv-sim__label" for="rv-th">Puissance (TH)</label>
+            <label class="rv-sim__label" for="rv-th" data-i18n="common.power">Puissance (TH)</label>
             <input class="rv-sim__input" id="rv-th" data-rv="th" type="number" min="0" step="1">
           </div>
           <div class="rv-sim__field">
-            <label class="rv-sim__label" for="rv-eff">Efficience (W/TH)</label>
+            <label class="rv-sim__label" for="rv-eff" data-i18n="rv.eff">Efficience (W/TH)</label>
             <input class="rv-sim__input" id="rv-eff" data-rv="eff" type="number" min="0" step="0.1">
           </div>
           <div class="rv-sim__field">
-            <label class="rv-sim__label" for="rv-discount">Remise maintenance (%)</label>
+            <label class="rv-sim__label" for="rv-discount" data-i18n="rv.discount">Remise maintenance (%)</label>
             <input class="rv-sim__input" id="rv-discount" data-rv="discount" type="number" min="0" max="100" step="0.1">
           </div>
           <div class="rv-sim__field">
-            <label class="rv-sim__label" for="rv-th-price">Prix du TH ($)</label>
+            <label class="rv-sim__label" for="rv-th-price" data-i18n="common.thPrice">Prix du TH ($)</label>
             <input class="rv-sim__input" id="rv-th-price" data-rv="thPrice" type="number" min="0" step="0.01">
           </div>
           <div class="rv-sim__field">
-            <label class="rv-sim__label" for="rv-btc">Prix BTC ($)</label>
+            <label class="rv-sim__label" for="rv-btc" data-i18n="common.btcPrice">Prix BTC ($)</label>
             <input class="rv-sim__input" id="rv-btc" data-rv="btcPrice" type="number" min="0" step="100">
           </div>
           <div class="rv-sim__field">
-            <label class="rv-sim__label" for="rv-sats">Rendement réseau (sats/TH/jour)</label>
+            <label class="rv-sim__label" for="rv-sats" data-i18n="rv.sats">Rendement réseau (sats/TH/jour)</label>
             <input class="rv-sim__input" id="rv-sats" data-rv="sats" type="number" min="0" step="0.1">
           </div>
           <div class="rv-sim__field">
-            <label class="rv-sim__label" for="rv-kwh">Électricité ($/kWh)</label>
+            <label class="rv-sim__label" for="rv-kwh" data-i18n="rv.kwh">Électricité ($/kWh)</label>
             <input class="rv-sim__input" id="rv-kwh" data-rv="kwh" type="number" min="0" step="0.005">
           </div>
           <div class="rv-sim__field">
             <label class="rv-sim__label">Greedy Machines</label>
             <label class="rv-sim__check">
               <input type="checkbox" data-rv="greedy">
-              <span>Avec Greedy Machines</span>
+              <span data-i18n="rv.greedyCheck">Avec Greedy Machines</span>
             </label>
           </div>
           <div class="rv-sim__field" data-rv-greedy-fields>
-            <label class="rv-sim__label" for="rv-greedy-th">Puissance des Greedy (TH)</label>
+            <label class="rv-sim__label" for="rv-greedy-th" data-i18n="rv.greedyTh">Puissance des Greedy (TH)</label>
             <input class="rv-sim__input" id="rv-greedy-th" data-rv="greedyTh" type="number" min="0" step="1">
           </div>
           <div class="rv-sim__field" data-rv-greedy-fields>
-            <label class="rv-sim__label" for="rv-greedy-rate">Power increase rate (% / semaine)</label>
+            <label class="rv-sim__label" for="rv-greedy-rate" data-i18n="common.powerIncreaseRate">Taux d'augmentation de puissance (% / semaine)</label>
             <input class="rv-sim__input" id="rv-greedy-rate" data-rv="greedyRate" type="number" min="0" step="0.01">
           </div>
           <div class="rv-sim__field" data-rv-greedy-fields>
-            <label class="rv-sim__label">Réinvestissement</label>
+            <label class="rv-sim__label" data-i18n="rv.greedyReinvestLabel">Réinvestissement</label>
             <label class="rv-sim__check">
               <input type="checkbox" data-rv="reinvestGreedy">
-              <span>Réinvest. dans Greedy</span>
+              <span data-i18n="rv.greedyReinvestCheck">Réinvest. dans Greedy</span>
             </label>
           </div>
         </div>
 
         <div class="rv-sim__strategies">
           <div class="rv-sim__strategy rv-sim__strategy--reinvest">
-            <div class="rv-sim__strategy-title">🔄 Temporalité réinvestissement</div>
-            <div class="rv-sim__strategy-hint">Les gains nets sont convertis en TH</div>
+            <div class="rv-sim__strategy-title" data-i18n="rv.strategyReinvestTitle">🔄 Temporalité réinvestissement</div>
+            <div class="rv-sim__strategy-hint" data-i18n="rv.strategyReinvestHint">Les gains nets sont convertis en TH</div>
             <div class="rv-sim__strategy-row">
-              <label class="rv-sim__label" for="rv-reinvest-duration">Durée</label>
+              <label class="rv-sim__label" for="rv-reinvest-duration" data-i18n="common.duration">Durée</label>
               <div class="rv-sim__duration">
                 <input class="rv-sim__input" id="rv-reinvest-duration" data-rv="reinvestDuration" type="number" min="1"
                   step="1">
-                <select class="rv-sim__select" data-rv="reinvestUnit" aria-label="Unité réinvestissement">
-                  <option value="day">Jour(s)</option>
-                  <option value="week">Semaine(s)</option>
-                  <option value="month" selected>Mois</option>
-                  <option value="year">Année(s)</option>
+                <select class="rv-sim__select" data-rv="reinvestUnit" aria-label="Unité réinvestissement" data-i18n-aria="rv.unitAriaReinvest">
+                  <option value="day" data-i18n-option="common.unitDayOpt">Jour(s)</option>
+                  <option value="week" data-i18n-option="common.unitWeekOpt">Semaine(s)</option>
+                  <option value="month" selected data-i18n-option="common.unitMonthOpt">Mois</option>
+                  <option value="year" data-i18n-option="common.unitYearOpt">Année(s)</option>
                 </select>
               </div>
             </div>
           </div>
           <div class="rv-sim__strategy rv-sim__strategy--classic">
-            <div class="rv-sim__strategy-title">💰 Temporalité classique</div>
-            <div class="rv-sim__strategy-hint">Après la phase de réinvestissement, les gains sont retirés</div>
+            <div class="rv-sim__strategy-title" data-i18n="rv.strategyClassicTitle">💰 Temporalité classique</div>
+            <div class="rv-sim__strategy-hint" data-i18n="rv.strategyClassicHint">Après la phase de réinvestissement, les gains sont retirés</div>
             <div class="rv-sim__strategy-row">
-              <label class="rv-sim__label" for="rv-classic-duration">Durée</label>
+              <label class="rv-sim__label" for="rv-classic-duration" data-i18n="common.duration">Durée</label>
               <div class="rv-sim__duration">
                 <input class="rv-sim__input" id="rv-classic-duration" data-rv="classicDuration" type="number" min="1"
                   step="1">
-                <select class="rv-sim__select" data-rv="classicUnit" aria-label="Unité classique">
-                  <option value="day">Jour(s)</option>
-                  <option value="week">Semaine(s)</option>
-                  <option value="month" selected>Mois</option>
-                  <option value="year">Année(s)</option>
+                <select class="rv-sim__select" data-rv="classicUnit" aria-label="Unité classique" data-i18n-aria="rv.unitAriaClassic">
+                  <option value="day" data-i18n-option="common.unitDayOpt">Jour(s)</option>
+                  <option value="week" data-i18n-option="common.unitWeekOpt">Semaine(s)</option>
+                  <option value="month" selected data-i18n-option="common.unitMonthOpt">Mois</option>
+                  <option value="year" data-i18n-option="common.unitYearOpt">Année(s)</option>
                 </select>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="rv-sim__warning hidden" data-rv-warning>⚠ Prix du TH à 0 : le réinvestissement est désactivé.</div>
+        <div class="rv-sim__warning hidden" data-rv-warning data-i18n="rv.warning">⚠ Prix du TH à 0 : le réinvestissement est désactivé.</div>
 
         <div class="rv-sim__tabs" role="tablist">
-          <button class="rv-sim__tab active" data-rv-view="table" role="tab" aria-selected="true">📋 Table</button>
-          <button class="rv-sim__tab" data-rv-view="chart" role="tab" aria-selected="false">📈 Graphique</button>
+          <button class="rv-sim__tab active" data-rv-view="table" role="tab" aria-selected="true" data-i18n="rv.tabTable">📋 Table</button>
+          <button class="rv-sim__tab" data-rv-view="chart" role="tab" aria-selected="false" data-i18n="rv.tabChart">📈 Graphique</button>
         </div>
 
         <div class="rv-sim__view" data-rv-view-pane="table">
@@ -123,19 +123,19 @@
             <table class="rv-sim__table">
               <thead>
                 <tr>
-                  <th rowspan="2">Période</th>
-                  <th colspan="4" class="rv-sim__th--reinvest">🔄 Réinvestissement</th>
-                  <th colspan="3" class="rv-sim__th--classic">💰 Classique</th>
-                  <th rowspan="2">Δ Patrimoine</th>
+                  <th rowspan="2" data-i18n="common.period">Période</th>
+                  <th colspan="4" class="rv-sim__th--reinvest" data-i18n="rv.thReinvest">🔄 Réinvestissement</th>
+                  <th colspan="3" class="rv-sim__th--classic" data-i18n="rv.thClassic">💰 Classique</th>
+                  <th rowspan="2" data-i18n="rv.thDeltaWealth">Δ Patrimoine</th>
                 </tr>
                 <tr>
-                  <th>Puissance (TH)</th>
-                  <th>+TH achetés</th>
-                  <th>Net cumulé ($)</th>
-                  <th>Patrimoine ($)</th>
-                  <th>Puissance (TH)</th>
-                  <th>Net retiré ($)</th>
-                  <th>Patrimoine ($)</th>
+                  <th data-i18n="common.power">Puissance (TH)</th>
+                  <th data-i18n="rv.thThBought">+TH achetés</th>
+                  <th data-i18n="rv.thNetCum">Net cumulé ($)</th>
+                  <th data-i18n="rv.thWealth">Patrimoine ($)</th>
+                  <th data-i18n="common.power">Puissance (TH)</th>
+                  <th data-i18n="rv.thNetWithdrawn">Net retiré ($)</th>
+                  <th data-i18n="rv.thWealth">Patrimoine ($)</th>
                 </tr>
               </thead>
               <tbody data-rv-tbody></tbody>
@@ -145,24 +145,24 @@
 
         <div class="rv-sim__view hidden" data-rv-view-pane="chart">
           <div class="rv-sim__legend">
-            <span class="rv-sim__legend-item rv-sim__legend-item--reinvest">🔄 Réinvest. → classique</span>
-            <span class="rv-sim__legend-item rv-sim__legend-item--classic">💰 Classique</span>
+            <span class="rv-sim__legend-item rv-sim__legend-item--reinvest" data-i18n="rv.legendReinvest">🔄 Réinvest. → classique</span>
+            <span class="rv-sim__legend-item rv-sim__legend-item--classic" data-i18n="rv.legendClassic">💰 Classique</span>
           </div>
           <div class="rv-sim__charts" data-rv-charts>
             <div class="rv-sim__chart">
-              <div class="rv-sim__chart-title">⚡ Puissance (TH)</div>
+              <div class="rv-sim__chart-title" data-i18n="rv.chartPower">⚡ Puissance (TH)</div>
               <div class="rv-sim__chart-wrap">
                 <canvas data-rv-chart="power"></canvas>
               </div>
             </div>
             <div class="rv-sim__chart">
-              <div class="rv-sim__chart-title">🏦 Patrimoine ($)</div>
+              <div class="rv-sim__chart-title" data-i18n="rv.chartWealth">🏦 Patrimoine ($)</div>
               <div class="rv-sim__chart-wrap">
                 <canvas data-rv-chart="wealth"></canvas>
               </div>
             </div>
             <div class="rv-sim__chart">
-              <div class="rv-sim__chart-title">💵 Net cumulé ($)</div>
+              <div class="rv-sim__chart-title" data-i18n="rv.chartCash">💵 Net cumulé ($)</div>
               <div class="rv-sim__chart-wrap">
                 <canvas data-rv-chart="cash"></canvas>
               </div>
@@ -171,7 +171,7 @@
           </div>
         </div>
 
-        <div class="rv-sim__note">
+        <div class="rv-sim__note" data-i18n="rv.note">
           Simulation indicative basée sur les formules GoMining (brut = sats/TH/jour × TH × BTC / 1e8 ;
           maintenance = électricité + service, remise déduite). La stratégie réinvestissement convertit
           le gain net quotidien en puissance au prix du TH indiqué (fixe sur la durée) pendant sa
@@ -185,6 +185,7 @@
       </section>
     </main>
   </div>
+  <script src="../common/i18n.js"></script>
   <script src="reinvest.js"></script>
 </body>
 

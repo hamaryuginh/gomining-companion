@@ -70,18 +70,30 @@
 
   // ─── Message listener (depuis la popup) ──────────────────────────
 
+  function reprocessAll() {
+    document.querySelectorAll('[data-gm-processed]').forEach((el) => {
+      delete el.dataset.gmProcessed;
+    });
+    document.querySelectorAll('[data-gm-upgrade-panel]').forEach((el) => {
+      el.remove();
+    });
+    marketplace.processAllCards();
+    panel.processMinerDetail();
+  }
+
   api.runtime.onMessage.addListener(async (msg) => {
     if (msg.action === 'recalculate') {
       log('Recalcul demandé par la popup');
       await costs.loadUpgradeCosts();
-      document.querySelectorAll('[data-gm-processed]').forEach((el) => {
-        delete el.dataset.gmProcessed;
-      });
-      document.querySelectorAll('[data-gm-upgrade-panel]').forEach((el) => {
-        el.remove();
-      });
-      marketplace.processAllCards();
-      panel.processMinerDetail();
+      reprocessAll();
+    }
+  });
+
+  // ─── Changement de langue (sélecteur de la popup) ────────────────
+
+  api.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.gmLang) {
+      I18N.init().then(() => reprocessAll());
     }
   });
 
@@ -89,6 +101,7 @@
 
   async function init() {
     log('Chargé sur', window.location.href);
+    await I18N.init();
     await costs.loadUpgradeCosts();
     rewards.injectLivePriceHook();
     setupObserver();

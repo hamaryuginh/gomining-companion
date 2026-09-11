@@ -44,6 +44,35 @@ h1 {
   margin-bottom: 12px;
 }
 
+/* ─── Sélecteur de langue ───────────────────────────────── */
+
+.lang-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.lang-row label {
+  color: #aaa;
+}
+
+#lang-select {
+  background: #1a1a2e;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 12px;
+  padding: 3px 6px;
+}
+
+#lang-select:focus {
+  outline: none;
+  border-color: #ffaa00;
+}
+
 /* ─── Coûts d'upgrade ─────────────────────────────────── */
 
 #costs-section {

@@ -8,6 +8,7 @@
 
   const GM = (globalThis.GM = globalThis.GM || {});
   const { C, log, fmt } = GM;
+  const t = GM.I18N.t;
   const {
     DETAIL_DESC_CLASS, UPGRADE_PANEL_CLASS, YIELD_SIM_CLASS,
     TARGET_EFFICIENCY_15, TARGET_EFFICIENCY_12,
@@ -57,21 +58,21 @@
     const isOptimal15 = wth <= TARGET_EFFICIENCY_15;
 
     const card = (target, cost, total, pTh, optimal) => `
-      <div class="${UPGRADE_PANEL_CLASS}__card${optimal ? ` ${UPGRADE_PANEL_CLASS}__card--disabled` : ''}" data-gm-card-target="${target}" ${optimal ? '' : `title="Sélectionner ${target} W/TH dans le calculateur"`}>
+      <div class="${UPGRADE_PANEL_CLASS}__card${optimal ? ` ${UPGRADE_PANEL_CLASS}__card--disabled` : ''}" data-gm-card-target="${target}" ${optimal ? '' : `title="${t('panel.cardSelectTitle', [target])}"`}>
         <div class="${UPGRADE_PANEL_CLASS}__card-head">
           <span class="${UPGRADE_PANEL_CLASS}__card-target">→ ${target} W/TH</span>
-          ${optimal ? `<span class="${UPGRADE_PANEL_CLASS}__card-optimal">Déjà optimal</span>` : ''}
+          ${optimal ? `<span class="${UPGRADE_PANEL_CLASS}__card-optimal">${t('panel.alreadyOptimal')}</span>` : ''}
         </div>
         <div class="${UPGRADE_PANEL_CLASS}__card-cost">
-          <span class="${UPGRADE_PANEL_CLASS}__card-label">Coût upgrade</span>
+          <span class="${UPGRADE_PANEL_CLASS}__card-label">${t('common.upgradeCost')}</span>
           <span class="${UPGRADE_PANEL_CLASS}__card-value">${fmt(cost)}</span>
         </div>
         ${priceUsd ? `
         <div class="${UPGRADE_PANEL_CLASS}__card-row">
-          <span>Prix total</span><span>${fmt(total)}</span>
+          <span>${t('common.totalPrice')}</span><span>${fmt(total)}</span>
         </div>
         <div class="${UPGRADE_PANEL_CLASS}__card-row ${UPGRADE_PANEL_CLASS}__card-row--highlight">
-          <span>$/TH upgradé</span><span>${fmt(pTh)}</span>
+          <span>${t('common.pricePerThUpgraded')}</span><span>${fmt(pTh)}</span>
         </div>` : ''}
       </div>`;
 
@@ -84,35 +85,35 @@
     const calculator = `
       <div class="${UPGRADE_PANEL_CLASS}__calc" data-gm-fold>
         <div class="${UPGRADE_PANEL_CLASS}__calc-title" data-gm-fold-toggle role="button" tabindex="0" aria-expanded="false">
-          <span>🚀 Calculateur upgrade complet</span>
+          <span>${t('panel.calcTitle')}</span>
           <span class="gm-fold-chevron">▾</span>
         </div>
         <div class="${UPGRADE_PANEL_CLASS}__calc-body" data-gm-fold-body>
           <div class="${UPGRADE_PANEL_CLASS}__calc-grid">
             <div class="${UPGRADE_PANEL_CLASS}__field">
-              <label class="${UPGRADE_PANEL_CLASS}__label" for="gm-efficiency">Efficience cible (W/TH)</label>
+              <label class="${UPGRADE_PANEL_CLASS}__label" for="gm-efficiency">${t('panel.targetEff')}</label>
               <select class="${UPGRADE_PANEL_CLASS}__select" id="gm-efficiency">
                 ${buildEfficiencyOptions(wth, Math.min(TARGET_EFFICIENCY_15, Math.floor(wth)))}
               </select>
             </div>
             <div class="${UPGRADE_PANEL_CLASS}__field">
-              <label class="${UPGRADE_PANEL_CLASS}__label" for="gm-power">Puissance (TH)</label>
+              <label class="${UPGRADE_PANEL_CLASS}__label" for="gm-power">${t('common.power')}</label>
               <input class="${UPGRADE_PANEL_CLASS}__input" id="gm-power" type="number" min="0" step="0.01" value="${th}">
             </div>
           </div>
           <div class="${UPGRADE_PANEL_CLASS}__calc-result">
             <div class="${UPGRADE_PANEL_CLASS}__row">
-              <span>Coût upgrade</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-cost>—</span>
+              <span>${t('common.upgradeCost')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-cost>—</span>
             </div>
             <div class="${UPGRADE_PANEL_CLASS}__row">
-              <span>Coût / TH</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-cost-pth>—</span>
+              <span>${t('panel.costPerTh')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-cost-pth>—</span>
             </div>
             ${priceUsd ? `
             <div class="${UPGRADE_PANEL_CLASS}__row">
-              <span>Prix total upgradé</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-total>—</span>
+              <span>${t('panel.totalUpgraded')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-total>—</span>
             </div>
             <div class="${UPGRADE_PANEL_CLASS}__row ${UPGRADE_PANEL_CLASS}__row--highlight">
-              <span>$/TH upgradé</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-pth-upgraded>—</span>
+              <span>${t('common.pricePerThUpgraded')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-pth-upgraded>—</span>
             </div>` : ''}
           </div>
           <div class="${UPGRADE_PANEL_CLASS}__strategies" data-gm-strategies></div>
@@ -122,7 +123,7 @@
     return `
       <div class="${UPGRADE_PANEL_CLASS}" data-gm-upgrade-panel>
         <div class="${UPGRADE_PANEL_CLASS}__header">
-          <span class="${UPGRADE_PANEL_CLASS}__title">⚡ GoMining Companion — Upgrade</span>
+          <span class="${UPGRADE_PANEL_CLASS}__title">${t('panel.headerTitle')}</span>
           <span class="${UPGRADE_PANEL_CLASS}__subtitle">${th} TH • ${wth} W/TH</span>
         </div>
         ${quickCards}
@@ -187,10 +188,10 @@
     const isRefEff = POWER_REF_EFFS.includes(targetEff);
     const show = isRefEff && strategies && strategies.both;
     container.innerHTML = show ? `
-      <div class="${UPGRADE_PANEL_CLASS}__strategies-title">Stratégies d'upgrade</div>
+      <div class="${UPGRADE_PANEL_CLASS}__strategies-title">${t('panel.strategiesTitle')}</div>
       <div class="${UPGRADE_PANEL_CLASS}__strategies-grid">
-        ${buildStrategyCard('① Eff. → Power', strategies.strategy1, strategies.cost === strategies.strategy1.total, true)}
-        ${buildStrategyCard('② Power → Eff.', strategies.strategy2, strategies.cost === strategies.strategy2.total, false)}
+        ${buildStrategyCard(t('panel.strategyEffPower'), strategies.strategy1, strategies.cost === strategies.strategy1.total, true)}
+        ${buildStrategyCard(t('panel.strategyPowerEff'), strategies.strategy2, strategies.cost === strategies.strategy2.total, false)}
       </div>
     ` : '';
   }
@@ -206,28 +207,28 @@
   function buildStrategyCard(label, strategy, recommended, effFirst) {
     const rows = effFirst
       ? `<div class="${UPGRADE_PANEL_CLASS}__strategy-row">
-          <span>Efficience</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.effCost)}</span>
+          <span>${t('panel.effRow')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.effCost)}</span>
         </div>
         <div class="${UPGRADE_PANEL_CLASS}__strategy-row">
-          <span>Puissance</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.powerCost)}</span>
+          <span>${t('panel.powerRow')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.powerCost)}</span>
         </div>`
       : `<div class="${UPGRADE_PANEL_CLASS}__strategy-row">
-          <span>Puissance</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.powerCost)}</span>
+          <span>${t('panel.powerRow')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.powerCost)}</span>
         </div>
         <div class="${UPGRADE_PANEL_CLASS}__strategy-row">
-          <span>Efficience</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.effCost)}</span>
+          <span>${t('panel.effRow')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.effCost)}</span>
         </div>`;
 
     return `
       <div class="${UPGRADE_PANEL_CLASS}__strategy ${recommended ? `${UPGRADE_PANEL_CLASS}__strategy--recommended` : ''}">
         <div class="${UPGRADE_PANEL_CLASS}__strategy-head">
           <span>${label}</span>
-          ${recommended ? `<span class="${UPGRADE_PANEL_CLASS}__strategy-badge">Recommandée</span>` : ''}
+          ${recommended ? `<span class="${UPGRADE_PANEL_CLASS}__strategy-badge">${t('common.recommended')}</span>` : ''}
         </div>
         <div class="${UPGRADE_PANEL_CLASS}__strategy-body">
           ${rows}
           <div class="${UPGRADE_PANEL_CLASS}__strategy-row ${UPGRADE_PANEL_CLASS}__strategy-total">
-            <span>Total</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.total)}</span>
+            <span>${t('common.total')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value">${fmt(strategy.total)}</span>
           </div>
         </div>
       </div>`;
@@ -269,35 +270,35 @@
     const col = (title, prefix, isTarget) => `
       <div class="${YIELD_SIM_CLASS}__col${isTarget ? ` ${YIELD_SIM_CLASS}__col--target` : ''}">
         <div class="${YIELD_SIM_CLASS}__col-title">${title}</div>
-        ${row('Revenu brut / jour', `${prefix}-gross-d`)}
-        ${row('Électricité / jour', `${prefix}-elec-d`, false, true)}
-        ${row('Service / jour', `${prefix}-serv-d`, false, true)}
-        ${row('Maintenance / jour', `${prefix}-maint-d`, false, true)}
-        ${row('Net / jour', `${prefix}-net-d`, true)}
-        ${row('Net / mois', `${prefix}-net-m`)}
-        ${row('Net / an', `${prefix}-net-y`, true)}
-        ${row('ROI annuel', `${prefix}-roi`)}
-        ${row('Récupération', `${prefix}-payback`)}
+        ${row(t('panel.grossDay'), `${prefix}-gross-d`)}
+        ${row(t('panel.elecDay'), `${prefix}-elec-d`, false, true)}
+        ${row(t('panel.serviceDay'), `${prefix}-serv-d`, false, true)}
+        ${row(t('panel.maintDay'), `${prefix}-maint-d`, false, true)}
+        ${row(t('common.netDay'), `${prefix}-net-d`, true)}
+        ${row(t('common.netMonth'), `${prefix}-net-m`)}
+        ${row(t('common.netYear'), `${prefix}-net-y`, true)}
+        ${row(t('panel.roiAnnual'), `${prefix}-roi`)}
+        ${row(t('panel.payback'), `${prefix}-payback`)}
       </div>`;
 
     return `
       <div class="${YIELD_SIM_CLASS}" data-gm-yield-sim data-gm-fold>
         <div class="${YIELD_SIM_CLASS}__header" data-gm-fold-toggle role="button" tabindex="0" aria-expanded="false">
           <div class="${YIELD_SIM_CLASS}__head">
-            <span class="${YIELD_SIM_CLASS}__title">📈 Simulateur de rendement</span>
+            <span class="${YIELD_SIM_CLASS}__title">${t('panel.yieldTitle')}</span>
             <span class="${YIELD_SIM_CLASS}__subtitle">${th} TH → ${wth} W/TH</span>
           </div>
           <span class="gm-fold-chevron">▾</span>
         </div>
         <div class="${YIELD_SIM_CLASS}__body" data-gm-fold-body>
           <div class="${YIELD_SIM_CLASS}__params">
-            ${field('btc', `Prix BTC ($) <span class="${YIELD_SIM_CLASS}__live" data-gm-sim-live-btc></span>`, btcPrice, '1')}
-            ${field('sats', 'Rendement (sats/TH/j)', satsPerThDay.toFixed(1), '0.1')}
-            ${field('kwh', 'Coût kWh ($)', kwh.toFixed(4), '0.0001')}
-            ${field('discount', 'Remise maint. (%)', 0, '0.1')}
+            ${field('btc', `${t('common.btcPrice')} <span class="${YIELD_SIM_CLASS}__live" data-gm-sim-live-btc></span>`, btcPrice, '1')}
+            ${field('sats', t('panel.satsYield'), satsPerThDay.toFixed(1), '0.1')}
+            ${field('kwh', t('panel.kwhCost'), kwh.toFixed(4), '0.0001')}
+            ${field('discount', t('panel.maintDiscount'), 0, '0.1')}
           </div>
           <div class="${YIELD_SIM_CLASS}__currency">
-            <span class="${YIELD_SIM_CLASS}__label">Maintenance en</span>
+            <span class="${YIELD_SIM_CLASS}__label">${t('panel.maintenanceIn')}</span>
             <div class="${YIELD_SIM_CLASS}__tabs">
               <button type="button" class="${YIELD_SIM_CLASS}__tab active" data-gm-sim-currency="GMT">GOMINING</button>
               <button type="button" class="${YIELD_SIM_CLASS}__tab" data-gm-sim-currency="BTC">BTC</button>
@@ -305,16 +306,15 @@
             <span class="${YIELD_SIM_CLASS}__live" data-gm-sim-live-gmt></span>
           </div>
           <div class="${YIELD_SIM_CLASS}__compare">
-            ${col('Actuel', 'cur')}
-            ${col('Après upgrade', 'tgt', true)}
+            ${col(t('panel.curCol'), 'cur')}
+            ${col(t('panel.tgtCol'), 'tgt', true)}
           </div>
           <div class="${YIELD_SIM_CLASS}__delta">
-            <span>Gain net après upgrade</span>
+            <span>${t('panel.deltaNet')}</span>
             <span class="${YIELD_SIM_CLASS}__row-value ${YIELD_SIM_CLASS}__delta-value" data-gm-sim-value="delta-net">—</span>
           </div>
           <div class="${YIELD_SIM_CLASS}__note">
-            Formules GoMining : brut = sats/TH/j × TH × BTC ; électricité = kWh × 24 × W/TH × TH ÷ 1000 ;
-            service = $0.0089/TH/j. ROI et délai basés sur le prix + coût d'upgrade.
+            ${t('panel.note')}
           </div>
         </div>
       </div>`;
@@ -371,7 +371,7 @@
     const fmtPayback = (invest, netDaily) => {
       if (!invest || !netDaily || netDaily <= 0) return '—';
       const days = invest / netDaily;
-      return days < 90 ? `${Math.round(days)} j` : `${(days / DAYS_PER_MONTH).toFixed(1)} mois`;
+      return days < 90 ? t('panel.paybackDays', [Math.round(days)]) : t('panel.paybackMonths', [(days / DAYS_PER_MONTH).toFixed(1)]);
     };
 
     const fmtBtc = (v) => {
@@ -415,7 +415,7 @@
     const delta = tgtYield.netDaily - curYield.netDaily;
     const deltaEl = sim.querySelector('[data-gm-sim-value="delta-net"]');
     if (deltaEl) {
-      deltaEl.textContent = `${delta >= 0 ? '+' : '−'}${fmt(Math.abs(delta))} / j`;
+      deltaEl.textContent = t('panel.deltaPerDay', [`${delta >= 0 ? '+' : '−'}${fmt(Math.abs(delta))}`]);
       deltaEl.classList.toggle(`${YIELD_SIM_CLASS}__delta-value--negative`, delta < 0);
     }
 
@@ -434,12 +434,12 @@
     const btcEl = sim.querySelector('[data-gm-sim-live-btc]');
     if (btcEl) {
       const btc = LIVE_PRICE.btc ?? panel._gmReward?.btcPrice ?? null;
-      btcEl.textContent = btc ? `(actuel : ${fmt(btc)})` : '';
+      btcEl.textContent = btc ? t('panel.liveCurrent', [fmt(btc)]) : '';
       btcEl.classList.toggle(`${YIELD_SIM_CLASS}__live--clickable`, btc !== null);
       if (btc !== null) {
         btcEl.setAttribute('role', 'button');
         btcEl.setAttribute('tabindex', '0');
-        btcEl.title = 'Cliquer pour utiliser ce prix';
+        btcEl.title = t('panel.liveClick');
       } else {
         btcEl.removeAttribute('role');
         btcEl.removeAttribute('tabindex');
@@ -450,7 +450,7 @@
     const gmtEl = sim.querySelector('[data-gm-sim-live-gmt]');
     if (gmtEl) {
       const gmt = resolveGmtPrice(panel);
-      gmtEl.textContent = `GOMINING : $${(gmt ?? DEFAULT_GMT_PRICE).toFixed(4)}`;
+      gmtEl.textContent = t('panel.liveGmt', ['$' + (gmt ?? DEFAULT_GMT_PRICE).toFixed(4)]);
     }
 
     updateYieldSim(panel, panel._gmData);

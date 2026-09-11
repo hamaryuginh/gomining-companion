@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>GoMining Helper</title>
+  <title data-i18n="popup.title">GoMining Helper</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 
@@ -15,23 +15,33 @@
     </header>
 
     <main>
-      <p id="status-text">Chargement…</p>
+      <p id="status-text" data-i18n="popup.statusLoading">Chargement…</p>
+
+      <div class="lang-row">
+        <label for="lang-select" data-i18n="popup.language">Langue</label>
+        <select id="lang-select">
+          <option value="auto" data-i18n-option="popup.langAuto">Auto (navigateur)</option>
+          <option value="fr">Français</option>
+          <option value="en">English</option>
+        </select>
+      </div>
 
       <section id="costs-section">
         <div id="costs-header">
-          <span>⚙ Coûts d'upgrade</span>
+          <span data-i18n="popup.costsTitle">⚙ Coûts d'upgrade</span>
           <button id="costs-toggle" class="toggle-btn">▼</button>
         </div>
         <div id="costs-panel" class="hidden">
           <div id="costs-grid"></div>
-          <button id="costs-reset" class="reset-btn">Rétablir les défauts</button>
-          <button id="recalculate-btn" class="recalc-btn hidden">Enregistrer</button>
+          <button id="costs-reset" class="reset-btn" data-i18n="popup.costsReset">Rétablir les défauts</button>
+          <button id="recalculate-btn" class="recalc-btn hidden" data-i18n="popup.costsSave">Enregistrer</button>
         </div>
       </section>
 
-      <button id="tools-btn" class="tools-btn">🛠 Ouvrir les outils</button>
+      <button id="tools-btn" class="tools-btn" data-i18n="popup.toolsBtn">🛠 Ouvrir les outils</button>
     </main>
   </div>
+  <script src="../common/i18n.js"></script>
   <script src="popup.js"></script>
 </body>
 

@@ -13,18 +13,37 @@ const DEFAULT_COSTS = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+  I18N.apply();
+  await I18N.init();
+  I18N.apply();
+
   const dot = document.getElementById('status-dot');
   const statusText = document.getElementById('status-text');
 
   const [tab] = await api.tabs.query({ active: true, currentWindow: true });
   const isOnSite = tab?.url?.startsWith('https://app.gomining.com/');
 
-  if (isOnSite) {
-    dot.classList.add('active');
-    statusText.textContent = 'Actif sur GoMining ✓';
-  } else {
-    statusText.textContent = 'Naviguez sur app.gomining.com';
+  function refreshStatus() {
+    if (isOnSite) {
+      dot.classList.add('active');
+      statusText.textContent = I18N.t('popup.statusActive');
+    } else {
+      statusText.textContent = I18N.t('popup.statusInactive');
+    }
   }
+  refreshStatus();
+
+  // ── Sélecteur de langue ─────────────────────────────────────────
+
+  const langSelect = document.getElementById('lang-select');
+  langSelect.value = (await api.storage.local.get('gmLang')).gmLang || 'auto';
+  langSelect.addEventListener('change', async () => {
+    const value = langSelect.value === 'auto' ? null : langSelect.value;
+    await I18N.setLang(value);
+    refreshStatus();
+    I18N.apply();
+    updateLink();
+  });
 
   // ── Éditeur de coûts ────────────────────────────────────────────
 
@@ -104,11 +123,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const link = document.createElement('a');
     link.href = '#';
     link.className = 'costs-extra-link';
-    link.textContent = 'Voir plus...';
+    link.textContent = I18N.t('popup.seeMore');
 
     function updateLink() {
       const hidden = extraWrap.classList.contains('hidden');
-      link.textContent = hidden ? 'Voir plus...' : 'Voir moins';
+      link.textContent = hidden ? I18N.t('popup.seeMore') : I18N.t('popup.seeLess');
     }
 
     link.addEventListener('click', (e) => {
@@ -159,12 +178,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (tab?.id) {
       try {
         await api.tabs.sendMessage(tab.id, { action: 'recalculate' });
-        statusText.textContent = 'Calcul relancé ✓';
+        statusText.textContent = I18N.t('popup.statusRecalculated');
         setTimeout(() => {
-          statusText.textContent = 'Actif sur GoMining ✓';
+          statusText.textContent = I18N.t('popup.statusActive');
         }, 2000);
       } catch (e) {
-        statusText.textContent = 'Erreur : page non disponible';
+        statusText.textContent = I18N.t('popup.statusError');
       }
     }
   }

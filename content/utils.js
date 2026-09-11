@@ -31,7 +31,7 @@
    * @param {number|null} n
    * @returns {string}
    */
-  GM.fmt = (n) => (n !== null ? `${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)}` : '—');
+  GM.fmt = (n) => (n !== null ? `${new Intl.NumberFormat(globalThis.I18N ? globalThis.I18N.locale() : 'en-US', { style: 'currency', currency: 'USD' }).format(n)}` : '—');
 
   /** Borne une valeur entre min et max */
   GM.clamp = (v, min, max) => Math.min(max, Math.max(min, v));

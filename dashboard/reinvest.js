@@ -51,7 +51,7 @@
     month: DAYS_PER_MONTH / 7,
     year: DAYS_PER_YEAR / 7,
   };
-  const UNIT_LABEL = { day: 'Jour', week: 'Semaine', month: 'Mois', year: 'Année' };
+  const unitLabel = (unit) => I18N.t('common.unit' + unit.charAt(0).toUpperCase() + unit.slice(1) + 'Short');
 
   const DEFAULT_PARAMS = {
     th: 1000,
@@ -83,15 +83,15 @@
   const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
   function fmtMoney(v) {
-    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return v.toLocaleString(I18N.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function fmtTh(v) {
-    return v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    return v.toLocaleString(I18N.locale(), { maximumFractionDigits: 2 });
   }
 
   function fmtThFixed(v) {
-    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return v.toLocaleString(I18N.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function fmtSigned(v) {
@@ -303,7 +303,7 @@ function renderTable(computed) {
 
       return `
         <tr${rowClass ? ` class="${rowClass}"` : ''}${crossAttrs}>
-          <td${isCross ? ' class="rv-sim__tip-cell" tabindex="0"' : ''}>${u === null ? '⇄ Passage en classique' : `${UNIT_LABEL[axisUnit]} ${u}`}</td>
+          <td${isCross ? ' class="rv-sim__tip-cell" tabindex="0"' : ''}>${u === null ? I18N.t('rv.rowSwitch') : `${unitLabel(axisUnit)} ${u}`}</td>
           <td>${fmtTh(hPow)}</td>
           <td>${gainCell}</td>
           <td>${netCell}</td>
@@ -319,7 +319,7 @@ function renderTable(computed) {
 
     rows.push(`
       <tr class="rv-sim__row--base">
-        <td>Base</td>
+        <td>${I18N.t('common.baseRow')}</td>
         <td>${fmtTh(baseTotal)}</td>
         <td>—</td>
         <td>${fmtMoney(0)}</td>
@@ -432,14 +432,14 @@ function renderTable(computed) {
   }
 
   function fmtAxisMoney(v) {
-    if (v >= 1e6) return `${(v / 1e6).toLocaleString('en-US', { maximumFractionDigits: 1 })}M$`;
+    if (v >= 1e6) return `${(v / 1e6).toLocaleString(I18N.locale(), { maximumFractionDigits: 1 })}M$`;
     if (v >= 1e3) return `${Math.round(v / 1e3)}k$`;
     return `$${v >= 100 ? Math.round(v) : v.toFixed(1)}`;
   }
 
   function fmtAxisNum(v) {
-    if (v >= 1e6) return `${(v / 1e6).toLocaleString('en-US', { maximumFractionDigits: 1 })}M`;
-    if (v >= 1e3) return `${(v / 1e3).toLocaleString('en-US', { maximumFractionDigits: 1 })}k`;
+    if (v >= 1e6) return `${(v / 1e6).toLocaleString(I18N.locale(), { maximumFractionDigits: 1 })}M`;
+    if (v >= 1e3) return `${(v / 1e3).toLocaleString(I18N.locale(), { maximumFractionDigits: 1 })}k`;
     return `${Math.round(v)}`;
   }
 
@@ -500,7 +500,7 @@ function renderTable(computed) {
       ctx.moveTo(px, pad.t);
       ctx.lineTo(px, H - pad.b);
       ctx.stroke();
-      if (isLast) ctx.fillText(`${UNIT_LABEL[axisUnit]} ${Math.round(d / axisDays)}`, px, H - pad.b + 6);
+      if (isLast) ctx.fillText(`${unitLabel(axisUnit)} ${Math.round(d / axisDays)}`, px, H - pad.b + 6);
     }
 
     // Séries
@@ -536,7 +536,7 @@ function renderTable(computed) {
         ctx.font = '9px Segoe UI, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
-        ctx.fillText('⇄ fin réinvest.', tx + 4, pad.t + 2);
+        ctx.fillText(I18N.t('rv.chartEndReinvest'), tx + 4, pad.t + 2);
       }
     }
 
@@ -556,7 +556,7 @@ function renderTable(computed) {
         ctx.font = '9px Segoe UI, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
-        ctx.fillText('⇌ rattrapage net', cx + 4, pad.t + 2);
+        ctx.fillText(I18N.t('rv.chartCatchUp'), cx + 4, pad.t + 2);
       }
     }
 
@@ -672,21 +672,21 @@ function renderTable(computed) {
     const tip = chartTip;
     const wrap = chartsWrap;
     const { axisUnit, axisDays, rDays, hPower, cPower, hWealth, cWealth, hCash, cCash } = chartState;
-    const label = `${UNIT_LABEL[axisUnit]} ${Math.round(day / axisDays)} · ${day <= rDays ? 'réinvestissement' : 'classique'}`;
+    const label = `${unitLabel(axisUnit)} ${Math.round(day / axisDays)} · ${day <= rDays ? I18N.t('rv.phaseReinvest') : I18N.t('rv.phaseClassic')}`;
     tip.innerHTML = `
       <div class="rv-sim__chart-tip-title">${label}</div>
       <div class="rv-sim__chart-tip-row">
-        <span>⚡ Puissance</span>
+        <span>${I18N.t('rv.tipPower')}</span>
         <b class="rv-sim__chart-tip-val--h">${fmtTh(hPower[day])}</b>
         <b class="rv-sim__chart-tip-val--c">${fmtTh(cPower[day])}</b>
       </div>
       <div class="rv-sim__chart-tip-row">
-        <span>🏦 Patrimoine</span>
+        <span>${I18N.t('rv.tipWealth')}</span>
         <b class="rv-sim__chart-tip-val--h">${fmtMoney(hWealth[day])}</b>
         <b class="rv-sim__chart-tip-val--c">${fmtMoney(cWealth[day])}</b>
       </div>
       <div class="rv-sim__chart-tip-row">
-        <span>💵 Net cumulé</span>
+        <span>${I18N.t('rv.tipCash')}</span>
         <b class="rv-sim__chart-tip-val--h">${fmtMoney(hCash[day])}</b>
         <b class="rv-sim__chart-tip-val--c">${fmtMoney(cCash[day])}</b>
       </div>`;
@@ -727,10 +727,10 @@ function renderTable(computed) {
     if (!row || !row.dataset.rvCrossH) return;
     const tip = getTableTip();
     tip.innerHTML = `
-      <div class="rv-sim__table-tip-title">⇌ Rattrapage du net cumulé</div>
-      <div class="rv-sim__table-tip-text">Le net cumulé de la stratégie réinvestissement passe au-dessus de la classique à partir de cette période :</div>
-      <div class="rv-sim__table-tip-row">🔄 Réinvestissement : <b>${fmtMoney(parseFloat(row.dataset.rvCrossH))}</b></div>
-      <div class="rv-sim__table-tip-row">💰 Classique : <b>${fmtMoney(parseFloat(row.dataset.rvCrossC))}</b></div>`;
+      <div class="rv-sim__table-tip-title">${I18N.t('rv.tipCrossTitle')}</div>
+      <div class="rv-sim__table-tip-text">${I18N.t('rv.tipCrossText')}</div>
+      <div class="rv-sim__table-tip-row">${I18N.t('rv.tipCrossH')} <b>${fmtMoney(parseFloat(row.dataset.rvCrossH))}</b></div>
+      <div class="rv-sim__table-tip-row">${I18N.t('rv.tipCrossC')} <b>${fmtMoney(parseFloat(row.dataset.rvCrossC))}</b></div>`;
     tip.classList.add('visible');
     positionTableTip(e, tip);
   }
@@ -783,15 +783,15 @@ function renderTable(computed) {
     if (d.rvFarmTh === undefined || d.rvGreedyOrganicTh === undefined) return;
     const tip = getGainTip();
     const rows = [];
-    rows.push(`<div class="rv-sim__gain-tip-row">🐺 Greedy (upgrade) : <b>+${fmtThFixed(parseFloat(d.rvGreedyOrganicTh))} TH (+${d.rvGreedyOrganicPct}%)</b></div>`);
+    rows.push(`<div class="rv-sim__gain-tip-row">${I18N.t('rv.gainTipGreedy')} <b>+${fmtThFixed(parseFloat(d.rvGreedyOrganicTh))} TH (+${d.rvGreedyOrganicPct}%)</b></div>`);
     if (parseFloat(d.rvFarmTh) > 0.01) {
-      rows.push(`<div class="rv-sim__gain-tip-row">💸 Réinvest. ferme : <b>+${fmtThFixed(parseFloat(d.rvFarmTh))} TH (+${d.rvFarmPct}%)</b></div>`);
+      rows.push(`<div class="rv-sim__gain-tip-row">${I18N.t('rv.gainTipFarm')} <b>+${fmtThFixed(parseFloat(d.rvFarmTh))} TH (+${d.rvFarmPct}%)</b></div>`);
     }
     if (d.rvGreedyReinvestTh !== undefined && parseFloat(d.rvGreedyReinvestTh) > 0.01) {
-      rows.push(`<div class="rv-sim__gain-tip-row">🔄 Réinvest. Greedy : <b>+${fmtThFixed(parseFloat(d.rvGreedyReinvestTh))} TH (+${d.rvGreedyReinvestPct}%)</b></div>`);
+      rows.push(`<div class="rv-sim__gain-tip-row">${I18N.t('rv.gainTipGreedyReinvest')} <b>+${fmtThFixed(parseFloat(d.rvGreedyReinvestTh))} TH (+${d.rvGreedyReinvestPct}%)</b></div>`);
     }
     tip.innerHTML = `
-      <div class="rv-sim__gain-tip-title">Répartition des gains</div>
+      <div class="rv-sim__gain-tip-title">${I18N.t('common.gainSplit')}</div>
       ${rows.join('')}`;
     tip.classList.add('visible');
     positionGainTip(e, tip);
@@ -848,10 +848,10 @@ function renderTable(computed) {
     const cash = parseFloat(d.rvNetCash);
     const reinvest = parseFloat(d.rvNetReinvest);
     tip.innerHTML = `
-      <div class="rv-sim__net-tip-title">Net de la période</div>
-      <div class="rv-sim__net-tip-row">📈 Net généré : <b>+${fmtMoney(gen)}</b></div>
-      ${reinvest > 0.01 ? `<div class="rv-sim__net-tip-row">🔄 Réinvesti en TH : <b>${fmtMoney(reinvest)}</b></div>` : ''}
-      ${cash > 0.01 ? `<div class="rv-sim__net-tip-row">💵 Retiré (cash) : <b>${fmtMoney(cash)}</b></div>` : ''}`;
+      <div class="rv-sim__net-tip-title">${I18N.t('rv.netTipTitle')}</div>
+      <div class="rv-sim__net-tip-row">${I18N.t('rv.netTipGen')} <b>+${fmtMoney(gen)}</b></div>
+      ${reinvest > 0.01 ? `<div class="rv-sim__net-tip-row">${I18N.t('rv.netTipReinvested')} <b>${fmtMoney(reinvest)}</b></div>` : ''}
+      ${cash > 0.01 ? `<div class="rv-sim__net-tip-row">${I18N.t('rv.netTipWithdrawn')} <b>${fmtMoney(cash)}</b></div>` : ''}`;
     tip.classList.add('visible');
     positionNetTip(e, tip);
   }
@@ -985,6 +985,10 @@ function renderTable(computed) {
   let thPriceTouched = false;
 
   document.addEventListener('DOMContentLoaded', async () => {
+    I18N.apply();
+    await I18N.init();
+    I18N.apply();
+
     simEl = document.querySelector('[data-rv-sim]');
     tbody = simEl.querySelector('[data-rv-tbody]');
     chartsWrap = simEl.querySelector('[data-rv-charts]');
@@ -1051,5 +1055,14 @@ function renderTable(computed) {
     if (saved && saved.thPrice !== undefined) thPriceTouched = true;
     autoPrice();
     renderAll();
+
+    api.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.gmLang) {
+        I18N.init().then(() => {
+          I18N.apply();
+          renderAll();
+        });
+      }
+    });
   });
 })();

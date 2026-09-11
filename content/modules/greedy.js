@@ -11,6 +11,7 @@
 
   const GM = (globalThis.GM = globalThis.GM || {});
   const { C, fmt, clamp } = GM;
+  const t = GM.I18N.t;
   const {
     GREEDY_SIM_CLASS, GREEDY_DEFAULT_RATE, GREEDY_DEFAULT_DURATION,
     GREEDY_MAX_ROWS, GREEDY_DEFAULT_TH_PRICE, GREEDY_MAX_SIM_DAYS,
@@ -29,18 +30,13 @@
   };
 
   const UNIT_OPTIONS = [
-    ['day', 'Jour(s)'],
-    ['week', 'Semaine(s)'],
-    ['month', 'Mois'],
-    ['year', 'Année(s)'],
+    ['day', 'common.unitDayOpt'],
+    ['week', 'common.unitWeekOpt'],
+    ['month', 'common.unitMonthOpt'],
+    ['year', 'common.unitYearOpt'],
   ];
 
-  const UNIT_LABEL = {
-    day: 'Jour',
-    week: 'Semaine',
-    month: 'Mois',
-    year: 'Année',
-  };
+  const unitLabel = (unit) => t('common.unit' + unit.charAt(0).toUpperCase() + unit.slice(1) + 'Short');
 
   /**
    * Construit le HTML du simulateur Greedy Machines.
@@ -50,7 +46,7 @@
    */
   function buildGreedySimHtml(data) {
     const unitOptions = UNIT_OPTIONS
-      .map(([value, label], i) => `<option value="${value}"${i === 1 ? ' selected' : ''}>${label}</option>`)
+      .map(([value, key], i) => `<option value="${value}"${i === 1 ? ' selected' : ''}>${t(key)}</option>`)
       .join('');
 
     // Prix du TH par défaut : taux marginal d'upgrade power (POWER_UPGRADE_COSTS)
@@ -63,33 +59,33 @@
       <div class="${GREEDY_SIM_CLASS}" data-gm-greedy-sim data-gm-fold>
         <div class="${GREEDY_SIM_CLASS}__header" data-gm-fold-toggle role="button" tabindex="0" aria-expanded="false">
           <div class="${GREEDY_SIM_CLASS}__head">
-            <span class="${GREEDY_SIM_CLASS}__title">📊 Simulateur Greedy Machines</span>
-            <span class="${GREEDY_SIM_CLASS}__subtitle">Power up hebdomadaire • votes veGOMINING</span>
+            <span class="${GREEDY_SIM_CLASS}__title">${t('greedy.title')}</span>
+            <span class="${GREEDY_SIM_CLASS}__subtitle">${t('greedy.subtitle')}</span>
           </div>
           <span class="gm-fold-chevron">▾</span>
         </div>
         <div class="${GREEDY_SIM_CLASS}__body" data-gm-fold-body>
           <div class="${GREEDY_SIM_CLASS}__params">
             <div class="${GREEDY_SIM_CLASS}__field">
-              <label class="${GREEDY_SIM_CLASS}__label" for="gm-greedy-rate">Power increase rate (% / semaine)</label>
+              <label class="${GREEDY_SIM_CLASS}__label" for="gm-greedy-rate">${t('common.powerIncreaseRate')}</label>
               <input class="${GREEDY_SIM_CLASS}__input" id="gm-greedy-rate" data-gm-greedy-rate type="number" min="0" step="0.01" value="${GREEDY_DEFAULT_RATE}">
             </div>
             <div class="${GREEDY_SIM_CLASS}__field">
-              <label class="${GREEDY_SIM_CLASS}__label" for="gm-greedy-duration">Durée</label>
+              <label class="${GREEDY_SIM_CLASS}__label" for="gm-greedy-duration">${t('common.duration')}</label>
               <div class="${GREEDY_SIM_CLASS}__duration">
                 <input class="${GREEDY_SIM_CLASS}__input" id="gm-greedy-duration" data-gm-greedy-duration type="number" min="1" step="1" value="${GREEDY_DEFAULT_DURATION}">
-                <select class="${GREEDY_SIM_CLASS}__select" data-gm-greedy-unit aria-label="Unité de durée">${unitOptions}</select>
+                <select class="${GREEDY_SIM_CLASS}__select" data-gm-greedy-unit aria-label="${t('greedy.unitAria')}">${unitOptions}</select>
               </div>
             </div>
             <div class="${GREEDY_SIM_CLASS}__field">
-              <label class="${GREEDY_SIM_CLASS}__label">Réinvestissement en puissance</label>
+              <label class="${GREEDY_SIM_CLASS}__label">${t('greedy.reinvestLabel')}</label>
               <label class="${GREEDY_SIM_CLASS}__check">
                 <input type="checkbox" data-gm-greedy-reinvest>
-                <span>Activer (net quotidien → TH)</span>
+                <span>${t('greedy.reinvestCheck')}</span>
               </label>
             </div>
             <div class="${GREEDY_SIM_CLASS}__field" data-gm-greedy-price-wrap>
-              <label class="${GREEDY_SIM_CLASS}__label" for="gm-greedy-th-price">Prix du TH ($)</label>
+              <label class="${GREEDY_SIM_CLASS}__label" for="gm-greedy-th-price">${t('common.thPrice')}</label>
               <input class="${GREEDY_SIM_CLASS}__input" id="gm-greedy-th-price" data-gm-greedy-price type="number" min="0" step="0.01" value="${defaultThPrice}">
             </div>
           </div>
@@ -97,26 +93,22 @@
             <table class="${GREEDY_SIM_CLASS}__table">
               <thead>
                 <tr>
-                  <th>Période</th>
-                  <th>Puissance (TH)</th>
+                  <th>${t('common.period')}</th>
+                  <th>${t('common.power')}</th>
                   <th>+TH</th>
                   <th>+%</th>
-                  <th>Net / jour</th>
-                  <th>Net / mois</th>
-                  <th>Net / an</th>
-                  <th>Δ Net / jour</th>
-                  <th>Net cumulé</th>
+                  <th>${t('common.netDay')}</th>
+                  <th>${t('common.netMonth')}</th>
+                  <th>${t('common.netYear')}</th>
+                  <th>${t('greedy.deltaNetDay')}</th>
+                  <th>${t('greedy.netCum')}</th>
                 </tr>
               </thead>
               <tbody data-gm-greedy-tbody></tbody>
             </table>
           </div>
           <div class="${GREEDY_SIM_CLASS}__note">
-            La puissance de base et l'efficience cible suivent le calculateur d'upgrade ; les gains
-            reprennent les paramètres du simulateur de rendement. Simulation indicative : l'augmentation
-            hebdomadaire dépend des résultats des votes de la communauté (veGOMINING).
-            Réinvestissement : gains nets quotidiens convertis en puissance au prix du TH indiqué
-            (survol des colonnes +TH / +% pour le détail Greedy vs réinvestissement).
+            ${t('greedy.note')}
           </div>
         </div>
       </div>`;
@@ -137,7 +129,7 @@
    * @returns {string}
    */
   function fmtTh(th) {
-    return th.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    return th.toLocaleString(I18N.locale(), { maximumFractionDigits: 2 });
   }
 
   /**
@@ -146,7 +138,7 @@
    * @returns {string}
    */
   function fmtThFixed(th) {
-    return th.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return th.toLocaleString(I18N.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   /**
@@ -252,7 +244,7 @@
     const rate = ratePct / 100;
     const dailyRate = Math.pow(1 + rate, 1 / 7) - 1;
     const weeksPerUnit = WEEKS_PER_UNIT[unit];
-    const periodLabel = UNIT_LABEL[unit];
+    const periodLabel = unitLabel(unit);
 
     // Lignes : une par unité temporelle, plafonnées pour rester lisible.
     // La dernière ligne tombe toujours exactement sur la durée choisie.
@@ -272,7 +264,7 @@
     // Ligne de départ (période 0)
     rows.push(`
       <tr class="${GREEDY_SIM_CLASS}__row ${GREEDY_SIM_CLASS}__row--base">
-        <td>Base</td>
+        <td>${t('common.baseRow')}</td>
         <td>${fmtTh(baseTh)}</td>
         <td>—</td>
         <td>—</td>
@@ -378,9 +370,9 @@
       const d = row.dataset;
       const tipEl = getTip();
       tipEl.innerHTML = `
-        <div class="${GREEDY_SIM_CLASS}__tooltip-title">Répartition des gains</div>
-        <div class="${GREEDY_SIM_CLASS}__tooltip-row">🐺 Greedy : <b>+${fmtThFixed(parseFloat(d.gmGreedyTh))} TH (+${d.gmGreedyPct}%)</b></div>
-        <div class="${GREEDY_SIM_CLASS}__tooltip-row">💸 Réinvestissement : <b>+${fmtThFixed(parseFloat(d.gmReinvestTh))} TH (+${d.gmReinvestPct}%)</b></div>`;
+        <div class="${GREEDY_SIM_CLASS}__tooltip-title">${t('common.gainSplit')}</div>
+        <div class="${GREEDY_SIM_CLASS}__tooltip-row">${t('greedy.tipGreedy')} <b>+${fmtThFixed(parseFloat(d.gmGreedyTh))} TH (+${d.gmGreedyPct}%)</b></div>
+        <div class="${GREEDY_SIM_CLASS}__tooltip-row">${t('greedy.tipReinvest')} <b>+${fmtThFixed(parseFloat(d.gmReinvestTh))} TH (+${d.gmReinvestPct}%)</b></div>`;
       tipEl.classList.add('visible');
       positionAt(e, tipEl);
     };
