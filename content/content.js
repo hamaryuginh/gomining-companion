@@ -103,11 +103,10 @@
     log('Chargé sur', window.location.href);
     await I18N.init();
     await costs.loadUpgradeCosts();
-    rewards.injectLivePriceHook();
     setupObserver();
     watchNavigation();
 
-    // Si l'interception n'a rien capté (appels déjà passés, CSP…),
+    // Si l'interception n'a rien capté (appels déjà passés…),
     // on récupère les prix directement (utile uniquement sur la page détail).
     setTimeout(() => {
       if (isMinerDetailPage() && (!rewards.LIVE_PRICE.btc || !rewards.LIVE_PRICE.gmt)) {

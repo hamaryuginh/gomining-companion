@@ -20,70 +20,6 @@
 
   const livePriceListeners = [];
 
-  // Hook injecté dans le monde principal : observe les appels fetch/XHR de
-  // l'application vers getPrice / getTokenPrice et les relaie au content script.
-  const LIVE_PRICE_HOOK_SOURCE = `(function () {
-    if (window.__gmLivePriceHook) return;
-    window.__gmLivePriceHook = true;
-
-    var post = function (type, payload) {
-      try { window.postMessage({ source: 'gm-companion-live-price', type: type, payload: payload }, '*'); } catch (e) {}
-    };
-    var kindOf = function (url) {
-      if (!url) return null;
-      if (String(url).indexOf('/api/exchanges/getPrice') !== -1) return 'btc';
-      if (String(url).indexOf('/api/exchanges/getTokenPrice') !== -1) return 'gmt';
-      return null;
-    };
-    var jsonOf = function (text) { try { return JSON.parse(text); } catch (e) { return null; } };
-
-    var origFetch = window.fetch;
-    if (origFetch) {
-      window.fetch = function () {
-        var args = arguments;
-        var url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '';
-        var kind = kindOf(url);
-        return origFetch.apply(this, args).then(function (res) {
-          if (kind) {
-            res.clone().json().then(function (json) { post(kind, json); }).catch(function () {});
-          }
-          return res;
-        });
-      };
-    }
-
-    var origOpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function () {
-      this.__gmUrl = arguments[1] || '';
-      return origOpen.apply(this, arguments);
-    };
-    var origSend = XMLHttpRequest.prototype.send;
-    XMLHttpRequest.prototype.send = function () {
-      var kind = kindOf(this.__gmUrl);
-      if (kind) {
-        this.addEventListener('load', function () {
-          var json = jsonOf(this.responseText);
-          if (json) post(kind, json);
-        });
-      }
-      return origSend.apply(this, arguments);
-    };
-  })();`;
-
-  /**
-   * Injecte le hook de prix live dans le monde principal de la page.
-   */
-  function injectLivePriceHook() {
-    try {
-      const script = document.createElement('script');
-      script.textContent = LIVE_PRICE_HOOK_SOURCE;
-      script.dataset.gmLiveHook = 'true';
-      (document.head || document.documentElement).appendChild(script);
-    } catch (e) {
-      log('Impossible d\'injecter le hook de prix live:', e);
-    }
-  }
-
   /**
    * Enregistre une réponse de prix live et notifie les abonnés.
    * @param {string} type - 'btc' | 'gmt'
@@ -104,7 +40,7 @@
     livePriceListeners.forEach((fn) => fn(type, payload.data));
   }
 
-  // Messages relayés par le hook du monde principal
+  // Messages relayés par le hook du monde principal (content/hooks/live-price-hook.js)
   window.addEventListener('message', (event) => {
     if (event.source !== window && event.source !== null) return;
     const msg = event.data;
@@ -175,7 +111,6 @@
   GM.rewards = {
     LIVE_PRICE,
     onLivePrice: (fn) => livePriceListeners.push(fn),
-    injectLivePriceHook,
     fetchLivePrices,
     resolveGmtPrice,
     computeYield,

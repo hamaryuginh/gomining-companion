@@ -196,10 +196,71 @@ document.addEventListener('DOMContentLoaded', async () => {
   resetBtn.addEventListener('click', resetCosts);
   recalcBtn.addEventListener('click', saveAndRecalculate);
 
+  // ── Upgrade listener ────────────────────────────────────────────
+
+  const listenerKey = 'upgradeListener';
+  const listenerEffSel = document.getElementById('listener-eff');
+  const listenerStartBtn = document.getElementById('listener-start');
+  const listenerStopBtn = document.getElementById('listener-stop');
+  const listenerStatus = document.getElementById('listener-status');
+
+  async function refreshListener() {
+    const stored = (await api.storage.local.get(listenerKey))[listenerKey] || {};
+    const active = !!stored.active;
+    listenerStartBtn.disabled = active;
+    listenerStopBtn.disabled = !active;
+    listenerEffSel.disabled = active;
+    listenerEffSel.value = String(stored.eff || 15);
+    const count = Object.keys((stored.data || {})[String(stored.eff || 15)] || {}).length;
+    listenerStatus.textContent = active
+      ? I18N.t('popup.listenerStatusActive', [count])
+      : I18N.t('popup.listenerStatusIdle');
+  }
+
+  listenerEffSel.addEventListener('change', async () => {
+    if (listenerEffSel.disabled) return;
+    const stored = (await api.storage.local.get(listenerKey))[listenerKey] || {};
+    await api.storage.local.set({ [listenerKey]: { ...stored, active: false, eff: Number(listenerEffSel.value) } });
+    refreshListener();
+  });
+
+  function formatListenerTable(data) {
+    const effs = Object.keys(data || {}).map(Number).sort((a, b) => a - b);
+    if (!effs.length) return null;
+    const blocks = effs.map((eff) => {
+      const pairs = Object.entries(data[eff])
+        .map(([to, rate]) => [Number(to), rate])
+        .sort((a, b) => a[0] - b[0]);
+      const lines = [];
+      for (let i = 0; i < pairs.length; i += 7) {
+        lines.push('      ' + pairs.slice(i, i + 7).map(([to, rate]) => `[${to}, ${rate}]`).join(', ') + ',');
+      }
+      return `    ${eff}: [\n${lines.join('\n')}\n    ],`;
+    });
+    return `{\n${blocks.join('\n')}\n}`;
+  }
+
+  listenerStartBtn.addEventListener('click', async () => {
+    const eff = Number(listenerEffSel.value);
+    const stored = (await api.storage.local.get(listenerKey))[listenerKey] || {};
+    await api.storage.local.set({ [listenerKey]: { ...stored, active: true, eff } });
+    console.log(`[GoMining Companion] Upgrade listener démarré (${eff} W/TH) — effectuez vos upgrades puis cliquez sur Arrêter`);
+    refreshListener();
+  });
+
+  listenerStopBtn.addEventListener('click', async () => {
+    const stored = (await api.storage.local.get(listenerKey))[listenerKey] || {};
+    await api.storage.local.set({ [listenerKey]: { ...stored, active: false } });
+    console.log('[GoMining Companion] Upgrade listener arrêté');
+    console.log(formatListenerTable(stored.data) || '[GoMining Companion] aucune donnée capturée');
+    refreshListener();
+  });
+
   const toolsBtn = document.getElementById('tools-btn');
   toolsBtn.addEventListener('click', () => {
     api.tabs.create({ url: api.runtime.getURL('dashboard/dashboard.html') });
   });
 
   await loadCosts();
+  await refreshListener();
 });

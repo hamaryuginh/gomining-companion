@@ -53,6 +53,8 @@
   };
   const unitLabel = (unit) => I18N.t('common.unit' + unit.charAt(0).toUpperCase() + unit.slice(1) + 'Short');
 
+  let powerUpgradeCosts = POWER_UPGRADE_COSTS;
+
   const DEFAULT_PARAMS = {
     th: 1000,
     eff: 15,
@@ -104,7 +106,7 @@
    */
   function powerRate(eff, powerTh) {
     const rateInRef = (refEff, th) => {
-      const steps = POWER_UPGRADE_COSTS[refEff];
+      const steps = powerUpgradeCosts[refEff] || POWER_UPGRADE_COSTS[refEff] || [];
       let rate = steps[steps.length - 1][1];
       for (const [to, amountPerTh] of steps) {
         if (th <= to) { rate = amountPerTh; break; }
@@ -1054,12 +1056,20 @@ function renderTable(computed) {
     applyParamsToDom(params);
     if (saved && saved.thPrice !== undefined) thPriceTouched = true;
     autoPrice();
+    const { table } = await PowerCosts.loadEffective(POWER_UPGRADE_COSTS);
+    powerUpgradeCosts = table;
     renderAll();
 
     api.storage.onChanged.addListener((changes, area) => {
       if (area === 'local' && changes.gmLang) {
         I18N.init().then(() => {
           I18N.apply();
+          renderAll();
+        });
+      }
+      if (area === 'local' && changes[PowerCosts.STORAGE_KEY]) {
+        PowerCosts.loadEffective(POWER_UPGRADE_COSTS).then(({ table }) => {
+          powerUpgradeCosts = table;
           renderAll();
         });
       }

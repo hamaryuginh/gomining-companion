@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
   "name": "__MSG_name__",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "__MSG_description__",
   "default_locale": "en",
   "browser_specific_settings": {
     "gecko": {
       "id": "gomining-companion@hamaryuginh.com",
-      "strict_min_version": "109.0"
+      "strict_min_version": "128.0"
     }
   },
   "permissions": [
@@ -24,12 +24,25 @@
         "https://app.gomining.com/*"
       ],
       "js": [
+        "content/hooks/live-price-hook.js",
+        "content/hooks/quote-listener-hook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://app.gomining.com/*"
+      ],
+      "js": [
         "common/i18n.js",
+        "common/power-costs.js",
         "content/utils.js",
         "content/config.js",
         "content/modules/costs.js",
         "content/modules/rewards.js",
         "content/modules/extract.js",
+        "content/modules/upgrade-listener.js",
         "content/modules/greedy.js",
         "content/modules/marketplace.js",
         "content/modules/panel.js",

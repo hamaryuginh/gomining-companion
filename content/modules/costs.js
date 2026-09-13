@@ -9,6 +9,24 @@
   const { C, api, log } = GM;
   const { DEFAULT_UPGRADE_COSTS, POWER_UPGRADE_COSTS, POWER_TIERS, TARGET_EFFICIENCY_15 } = C;
 
+  let powerUpgradeCosts = POWER_UPGRADE_COSTS;
+
+  /**
+   * Charge les coûts de puissance effectifs : données capturées par l'upgrade
+   * listener en priorité, paliers manquants comblés par les défauts.
+   */
+  async function loadPowerUpgradeCosts() {
+    try {
+      const { table, captured } = await PowerCosts.loadEffective(POWER_UPGRADE_COSTS);
+      powerUpgradeCosts = table;
+      const counts = [12, 15, 20].map((eff) => `${eff}: ${captured[eff].length}`).join(', ');
+      log(`Coûts d'upgrade power : paliers capturés prioritaires (${counts})`);
+    } catch (e) {
+      powerUpgradeCosts = POWER_UPGRADE_COSTS;
+      log('Impossible de charger les coûts capturés, valeurs par défaut utilisées:', e);
+    }
+  }
+
   /**
    * Charge les coûts d'upgrade personnalisés depuis le stockage local.
    */
@@ -22,7 +40,14 @@
     } catch (e) {
       log('Impossible de charger les coûts, utilisation des valeurs par défaut:', e);
     }
+    await loadPowerUpgradeCosts();
   }
+
+  api.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes[PowerCosts.STORAGE_KEY]) {
+      loadPowerUpgradeCosts();
+    }
+  });
 
   /**
    * Calcule le coût total en $ pour upgrader de `fromWth` jusqu'à la cible
@@ -56,7 +81,7 @@
    * @returns {number} coût par TH
    */
   function rateInRef(refEff, powerTh) {
-    const steps = POWER_UPGRADE_COSTS[refEff];
+    const steps = powerUpgradeCosts[refEff] || POWER_UPGRADE_COSTS[refEff] || [];
     let rate = 0;
     for (const [to, amountPerTh] of steps) {
       if (powerTh <= to) {
