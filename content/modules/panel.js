@@ -39,6 +39,77 @@
   }
 
   /**
+   * Lit le prix d'achat effectif depuis le champ éditable du panneau.
+   * Retourne null si vide/invalide (mineur non en vente sans prix saisi).
+   * @param {Element} panel
+   * @param {Object} data
+   * @returns {number|null}
+   */
+  function getEffectivePrice(panel, data) {
+    const input = panel ? panel.querySelector('[data-gm-purchase-price]') : null;
+    if (input) {
+      const v = parseFloat(input.value);
+      if (!isNaN(v) && v > 0) return v;
+      return null;
+    }
+    return data.priceUsd ?? null;
+  }
+
+  /**
+   * Construit le bloc "Prix d'achat" éditable.
+   * Pré-rempli avec le prix extrait quand le mineur est en vente.
+   * @param {Object} data
+   * @returns {string}
+   */
+  function buildPurchasePriceHtml(data) {
+    const val = data.priceUsd ?? '';
+    const hasPrice = data.priceUsd != null && data.priceUsd > 0;
+    return `
+      <div class="${UPGRADE_PANEL_CLASS}__purchase">
+        <div class="${UPGRADE_PANEL_CLASS}__purchase-row">
+          <label class="${UPGRADE_PANEL_CLASS}__purchase-label" for="gm-purchase-price">${t('panel.purchasePrice')}</label>
+          <div class="${UPGRADE_PANEL_CLASS}__purchase-input-wrap">
+            <input class="${UPGRADE_PANEL_CLASS}__input ${UPGRADE_PANEL_CLASS}__purchase-input" id="gm-purchase-price" data-gm-purchase-price type="number" min="0" step="0.01" value="${val}" placeholder="0.00">
+            <span class="${UPGRADE_PANEL_CLASS}__purchase-cur">$</span>
+          </div>
+        </div>
+        <div class="${UPGRADE_PANEL_CLASS}__purchase-hint" data-gm-purchase-hint${hasPrice ? ' style="display:none"' : ''}>${t('panel.purchasePriceHint')}</div>
+      </div>`;
+  }
+
+  /**
+   * Met à jour les cartes rapides (totaux) d'après le prix d'achat effectif.
+   * @param {Element} panel
+   * @param {Object} data
+   */
+  function updateQuickCards(panel, data) {
+    const effPrice = data.priceUsd ?? null;
+    const costs = {
+      [TARGET_EFFICIENCY_15]: computeUpgradeCost(data.wth, data.th, TARGET_EFFICIENCY_15),
+      [TARGET_EFFICIENCY_12]: computeUpgradeCost(data.wth, data.th, TARGET_EFFICIENCY_12),
+    };
+    [TARGET_EFFICIENCY_15, TARGET_EFFICIENCY_12].forEach((target) => {
+      const totalWrap = panel.querySelector(`[data-gm-quick-total-wrap="${target}"]`);
+      const pthWrap = panel.querySelector(`[data-gm-quick-pth-wrap="${target}"]`);
+      const totalEl = panel.querySelector(`[data-gm-quick-total="${target}"]`);
+      const pthEl = panel.querySelector(`[data-gm-quick-pth="${target}"]`);
+      if (!totalWrap || !pthWrap) return;
+      if (effPrice) {
+        const total = effPrice + costs[target];
+        if (totalWrap) totalWrap.style.display = '';
+        if (pthWrap) pthWrap.style.display = '';
+        if (totalEl) totalEl.textContent = fmt(total);
+        if (pthEl) pthEl.textContent = fmt(total / data.th);
+      } else {
+        if (totalWrap) totalWrap.style.display = 'none';
+        if (pthWrap) pthWrap.style.display = 'none';
+      }
+    });
+    const hint = panel.querySelector('[data-gm-purchase-hint]');
+    if (hint) hint.style.display = effPrice ? 'none' : '';
+  }
+
+  /**
    * Construit le bloc HTML du calculateur d'upgrade
    * @param {Object} data
    * @param {Object|null} reward - données du calculateur de récompenses
@@ -67,13 +138,12 @@
           <span class="${UPGRADE_PANEL_CLASS}__card-label">${t('common.upgradeCost')}</span>
           <span class="${UPGRADE_PANEL_CLASS}__card-value">${fmt(cost)}</span>
         </div>
-        ${priceUsd ? `
-        <div class="${UPGRADE_PANEL_CLASS}__card-row">
-          <span>${t('common.totalPrice')}</span><span>${fmt(total)}</span>
+        <div class="${UPGRADE_PANEL_CLASS}__card-row" data-gm-quick-total-wrap="${target}"${priceUsd ? '' : ' style="display:none"'}>
+          <span>${t('common.totalPrice')}</span><span data-gm-quick-total="${target}">${priceUsd ? fmt(total) : '—'}</span>
         </div>
-        <div class="${UPGRADE_PANEL_CLASS}__card-row ${UPGRADE_PANEL_CLASS}__card-row--highlight">
-          <span>${t('common.pricePerThUpgraded')}</span><span>${fmt(pTh)}</span>
-        </div>` : ''}
+        <div class="${UPGRADE_PANEL_CLASS}__card-row ${UPGRADE_PANEL_CLASS}__card-row--highlight" data-gm-quick-pth-wrap="${target}"${priceUsd ? '' : ' style="display:none"'}>
+          <span>${t('common.pricePerThUpgraded')}</span><span data-gm-quick-pth="${target}">${priceUsd ? fmt(pTh) : '—'}</span>
+        </div>
       </div>`;
 
     const quickCards = `
@@ -108,13 +178,12 @@
             <div class="${UPGRADE_PANEL_CLASS}__row">
               <span>${t('panel.costPerTh')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-cost-pth>—</span>
             </div>
-            ${priceUsd ? `
-            <div class="${UPGRADE_PANEL_CLASS}__row">
+            <div class="${UPGRADE_PANEL_CLASS}__row" data-gm-total-wrap${priceUsd ? '' : ' style="display:none"'}>
               <span>${t('panel.totalUpgraded')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-total>—</span>
             </div>
-            <div class="${UPGRADE_PANEL_CLASS}__row ${UPGRADE_PANEL_CLASS}__row--highlight">
+            <div class="${UPGRADE_PANEL_CLASS}__row ${UPGRADE_PANEL_CLASS}__row--highlight" data-gm-pth-upgraded-wrap${priceUsd ? '' : ' style="display:none"'}>
               <span>${t('common.pricePerThUpgraded')}</span><span class="${UPGRADE_PANEL_CLASS}__row-value" data-gm-pth-upgraded>—</span>
-            </div>` : ''}
+            </div>
           </div>
           <div class="${UPGRADE_PANEL_CLASS}__strategies" data-gm-strategies></div>
         </div>
@@ -126,6 +195,7 @@
           <span class="${UPGRADE_PANEL_CLASS}__title">${t('panel.headerTitle')}</span>
           <span class="${UPGRADE_PANEL_CLASS}__subtitle">${th} TH • ${wth} W/TH</span>
         </div>
+        ${buildPurchasePriceHtml(data)}
         ${quickCards}
         ${calculator}
         ${buildYieldSimHtml(data, reward)}
@@ -161,13 +231,24 @@
     const cost = strategies.cost;
     const costPTh = cost / power;
 
-    panel.querySelector('[data-gm-cost]').textContent = fmt(cost);
-    panel.querySelector('[data-gm-cost-pth]').textContent = fmt(costPTh);
+    const costEl = panel.querySelector('[data-gm-cost]');
+    if (costEl) costEl.textContent = fmt(cost);
+    const costPThEl = panel.querySelector('[data-gm-cost-pth]');
+    if (costPThEl) costPThEl.textContent = fmt(costPTh);
 
+    const totalWrap = panel.querySelector('[data-gm-total-wrap]');
+    const pthWrap = panel.querySelector('[data-gm-pth-upgraded-wrap]');
+    const totalEl = panel.querySelector('[data-gm-total]');
+    const pthEl = panel.querySelector('[data-gm-pth-upgraded]');
     if (data.priceUsd) {
       const total = data.priceUsd + cost;
-      panel.querySelector('[data-gm-total]').textContent = fmt(total);
-      panel.querySelector('[data-gm-pth-upgraded]').textContent = fmt(total / power);
+      if (totalWrap) totalWrap.style.display = '';
+      if (pthWrap) pthWrap.style.display = '';
+      if (totalEl) totalEl.textContent = fmt(total);
+      if (pthEl) pthEl.textContent = fmt(total / power);
+    } else {
+      if (totalWrap) totalWrap.style.display = 'none';
+      if (pthWrap) pthWrap.style.display = 'none';
     }
 
     renderStrategies(panel, strategies, target);
@@ -488,6 +569,17 @@
       powerInput.addEventListener('input', () => updateCalculator(panel, data));
     }
 
+    // Champ "Prix d'achat" éditable → pilote tous les blocs (cartes rapides,
+    // calculateur, simulateur de rendement). Pré-rempli si le mineur est en vente.
+    const purchaseInput = panel.querySelector('[data-gm-purchase-price]');
+    if (purchaseInput) {
+      purchaseInput.addEventListener('input', () => {
+        data.priceUsd = getEffectivePrice(panel, data);
+        updateQuickCards(panel, data);
+        updateCalculator(panel, data);
+      });
+    }
+
     // Inputs du simulateur de rendement → recalcul seul
     panel.querySelectorAll('[data-gm-sim-input]').forEach((input) => {
       input.addEventListener('input', () => updateYieldSim(panel, data));
@@ -605,6 +697,9 @@
     processMinerDetail,
     injectUpgradePanel,
     updateCalculator,
+    updateQuickCards,
+    getEffectivePrice,
+    buildPurchasePriceHtml,
     updateYieldSim,
     updateLivePriceAnnotations,
   };
