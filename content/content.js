@@ -9,7 +9,7 @@
   const GM = (globalThis.GM = globalThis.GM || {});
   const { api, log } = GM;
   const { C } = GM;
-  const { costs, rewards, marketplace, panel } = GM;
+  const { costs, rewards, marketplace, shortcuts, panel } = GM;
   const { MARKETPLACE_URL, MINER_DETAIL_URL_PATTERN } = C;
 
   // ─── Détection de page ───────────────────────────────────────────
@@ -35,6 +35,10 @@
           panel.processMinerDetail();
         } else if (isMarketplacePage()) {
           marketplace.processAllCards();
+          shortcuts.injectShortcuts();
+          // Les filtres natifs changent l'URL sans re-rendre la barre :
+          // resynchronise l'état actif des raccourcis existants
+          shortcuts.refreshActiveStates();
         }
       }, 300);
     });
@@ -63,6 +67,8 @@
         document.querySelectorAll('[data-gm-upgrade-panel]').forEach((el) => {
           el.remove();
         });
+        // L'URL a changé (filtres natifs ou navigation) : resynchronise l'état actif
+        shortcuts.refreshActiveStates();
       }
     });
     navObserver.observe(document.body, { childList: true, subtree: true });
@@ -79,6 +85,7 @@
     });
     marketplace.processAllCards();
     panel.processMinerDetail();
+    if (isMarketplacePage()) shortcuts.injectShortcuts();
   }
 
   api.runtime.onMessage.addListener(async (msg) => {
@@ -120,6 +127,7 @@
       panel.processMinerDetail();
     } else if (isMarketplacePage()) {
       marketplace.processAllCards();
+      shortcuts.injectShortcuts();
     }
   }
 

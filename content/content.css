@@ -1284,3 +1284,247 @@ html.light .gm-greedy-sim__tooltip-row b {
 [data-gm-fold]:not(.gm-fold--open) [data-gm-fold-toggle] {
   margin-bottom: 0;
 }
+
+/* ─── Raccourcis marketplace : bouton + et popin ──────────────── */
+
+.gm-shortcut-add__icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.gm-shortcut-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.gm-shortcut-modal-overlay.visible {
+  display: flex;
+}
+
+.gm-shortcut-modal {
+  width: 100%;
+  max-width: 360px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #1b1a2e;
+  border: 1px solid rgba(117, 64, 239, 0.45);
+  border-radius: 12px;
+  padding: 16px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 12px;
+  color: #e6e0fb;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+}
+
+.gm-shortcut-modal__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #a78bfa;
+  margin-bottom: 4px;
+}
+
+.gm-shortcut-modal__label {
+  display: block;
+  font-size: 11px;
+  color: #9d93c0;
+  margin: 10px 0 4px;
+}
+
+.gm-shortcut-modal__row-emoji {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.gm-shortcut-modal__input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(117, 64, 239, 0.35);
+  border-radius: 8px;
+  color: #e6e0fb;
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.gm-shortcut-modal__input:focus {
+  border-color: #7540ef;
+  box-shadow: 0 0 0 2px rgba(117, 64, 239, 0.25);
+}
+
+.gm-shortcut-modal__input--emoji {
+  width: 52px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 18px;
+  padding: 4px 6px;
+}
+
+.gm-shortcut-modal__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+}
+
+/* Les <button> de la popin sont écrasés par le reset global de l'app GoMining :
+   sélecteurs scopés sous l'overlay + !important pour ne pas se faire dépouiller. */
+.gm-shortcut-modal-overlay .gm-shortcut-modal__preset,
+.gm-shortcut-modal-overlay .gm-shortcut-modal__btn,
+.gm-shortcut-modal-overlay .gm-shortcut-modal__del {
+  appearance: none !important;
+  margin: 0 !important;
+  font-family: inherit !important;
+  text-transform: none !important;
+  cursor: pointer !important;
+}
+
+.gm-shortcut-modal-overlay .gm-shortcut-modal__preset {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(117, 64, 239, 0.3) !important;
+  border-radius: 8px !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  padding: 5px 7px !important;
+}
+
+.gm-shortcut-modal-overlay .gm-shortcut-modal__preset:hover {
+  border-color: #7540ef !important;
+  background: rgba(117, 64, 239, 0.2) !important;
+}
+
+.gm-shortcut-modal__url {
+  font-size: 10px;
+  color: #9d93c0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(117, 64, 239, 0.2);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.gm-shortcut-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.gm-shortcut-modal-overlay .gm-shortcut-modal__btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(117, 64, 239, 0.35) !important;
+  border-radius: 8px !important;
+  color: #e6e0fb !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 7px 16px !important;
+}
+
+.gm-shortcut-modal-overlay .gm-shortcut-modal__btn:hover {
+  border-color: #7540ef !important;
+  background: rgba(117, 64, 239, 0.2) !important;
+}
+
+.gm-shortcut-modal-overlay .gm-shortcut-modal__btn--primary {
+  background: rgba(117, 64, 239, 0.85) !important;
+  border-color: rgba(117, 64, 239, 0.85) !important;
+  color: #ffffff !important;
+}
+
+.gm-shortcut-modal-overlay .gm-shortcut-modal__btn--primary:hover {
+  background: #7540ef !important;
+  border-color: #7540ef !important;
+}
+
+.gm-shortcut-modal__list-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #a78bfa;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(117, 64, 239, 0.2);
+}
+
+.gm-shortcut-modal__empty {
+  font-size: 11px;
+  color: #9d93c0;
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.gm-shortcut-modal__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.gm-shortcut-modal__row-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gm-shortcut-modal-overlay .gm-shortcut-modal__del {
+  background: transparent !important;
+  border: 1px solid rgba(248, 113, 113, 0.4) !important;
+  border-radius: 6px !important;
+  color: #f87171 !important;
+  font-size: 11px !important;
+  padding: 1px 7px !important;
+  flex-shrink: 0;
+}
+
+.gm-shortcut-modal-overlay .gm-shortcut-modal__del:hover {
+  background: rgba(248, 113, 113, 0.15) !important;
+}
+
+html.light .gm-shortcut-modal {
+  background: #ffffff;
+  color: #2b2740;
+}
+
+html.light .gm-shortcut-modal__title,
+html.light .gm-shortcut-modal__list-title {
+  color: #6d40ea;
+}
+
+html.light .gm-shortcut-modal__label,
+html.light .gm-shortcut-modal__url,
+html.light .gm-shortcut-modal__empty {
+  color: #6b6480;
+}
+
+html.light .gm-shortcut-modal__input {
+  background: #ffffff;
+  border-color: rgba(117, 64, 239, 0.4);
+  color: #2b2740;
+}
+
+html.light .gm-shortcut-modal__preset {
+  background: rgba(117, 64, 239, 0.06) !important;
+}
+
+html.light .gm-shortcut-modal__btn {
+  background: rgba(117, 64, 239, 0.06) !important;
+  color: #2b2740 !important;
+}
+
+html.light .gm-shortcut-modal__btn--primary {
+  background: rgba(117, 64, 239, 0.85) !important;
+  color: #ffffff !important;
+}

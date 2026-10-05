@@ -87,6 +87,8 @@
   GM.C = {
     // ─── Pages & sélecteurs DOM ─────────────────────────────────────
     MARKETPLACE_URL: 'https://app.gomining.com/marketplace',
+    // Raccourcis prédéfinis (vide : l'utilisateur les crée via le bouton « + »)
+    MARKETPLACE_SHORTCUTS: [],
     CARDS_CONTAINER_CLASS: 'catalog-index__cards-row',
     BADGE_CLASS: 'gm-helper-badge',
     MINER_DETAIL_URL_PATTERN: /^https:\/\/app\.gomining\.com\/nft\/view\//,
