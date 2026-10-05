@@ -6,10 +6,10 @@
  * - Bouton « ➕ » en bout de barre : popin de création (emoji + nom) qui
  *   enregistre un raccourci vers l'URL courante (stockage extension,
  *   clé `userShortcuts`).
- * - Clic sur un raccourci : navigation SPA (pushState + popstate, sans
- *   rechargement) avec repli en rechargement si l'app ne réagit pas — la page
- *   n'expose aucun `<form>` de filtres soumettable (composants Angular, état
- *   piloté par les query params `filters` / `sort.key`).
+ * - Clic sur un raccourci : navigation hybride — filtres via l'URL (pushState +
+ *   popstate, sans rechargement), tri simulé en cliquant dans le dropdown du
+ *   panneau de filtres (l'app ne réécoute pas `sort` en SPA), rechargement
+ *   complet en repli si une étape échoue.
  * Exposé sur `GM.shortcuts`.
  */
 (function () {
@@ -25,7 +25,6 @@
   const ADD_ATTR = 'data-gm-shortcut-add';
   const MODAL_ATTR = 'data-gm-shortcut-modal';
   const STORAGE_KEY = 'userShortcuts';
-  const SPA_VERIFY_DELAY = 1500;
 
   const EMOJI_PRESETS = ['🐺', '⚡', '💰', '🔥', '⭐', '🚀', '💎', '🎯', '📈', '💸', '🏆', '🌙',
     '⛏️', '🪙', '📊', '🔎', '💵', '🏅'];
@@ -62,7 +61,8 @@
 
   function sameFilterState(a, b) {
     return a.searchParams.get('filters') === b.searchParams.get('filters') &&
-      a.searchParams.get('sort.key') === b.searchParams.get('sort.key');
+      a.searchParams.get('sort.key') === b.searchParams.get('sort.key') &&
+      a.searchParams.get('sort.direction') === b.searchParams.get('sort.direction');
   }
 
   function refreshActiveStates() {
@@ -85,6 +85,36 @@
 
   // ─── Navigation SPA (sans rechargement) avec repli ────────────
 
+  // Table des tris : (clé API, direction) → data-qa-key de l'item du dropdown.
+  // Extraite du bundle de l'app (sortList du composant nft-index) : sert à
+  // vérifier que le tri demandé est bien celui appliqué après navigation.
+  const SORT_OPTION_BY_VALUE = {
+    'newest|1': 'newest',
+    'price|1': 'priceToHigh',
+    'price|-1': 'priceToLow',
+    'roi|-1': 'roiToLow',
+    'thCost|1': 'thCostToHigh',
+    'thCost|-1': 'thCostToLow',
+    'rarityPosition|1': 'rarityPosition',
+  };
+
+  /**
+   * data-qa-key attendu dans le dropdown pour l'URL cible.
+   * @returns {string|null|undefined} null = pas de tri demandé,
+   *   undefined = combinaison inconnue (non vérifiable)
+   */
+  function expectedSortOption(target) {
+    const key = target.searchParams.get('sort.key');
+    if (!key) return null;
+    return SORT_OPTION_BY_VALUE[`${key}|${target.searchParams.get('sort.direction') || '1'}`];
+  }
+
+  /** data-qa-key de l'item actif du dropdown de tri (null si absent). */
+  function appliedSortOption() {
+    const active = document.querySelector('.catalog-index__dropdown-sort .dropdown-item.active');
+    return active ? active.getAttribute('data-qa-key') : null;
+  }
+
   function cardsSignature() {
     const container = document.querySelector(CARDS_SELECTOR);
     if (!container) return null;
@@ -92,11 +122,85 @@
     return `${container.querySelectorAll('nft-card').length}|${first ? first.getAttribute('href') : ''}`;
   }
 
+  // ─── Navigation hybride : URL pour les filtres, panel pour le tri ─
+  //
+  // Les filtres sont appliqués via l'URL (l'app écoute le param `filters`),
+  // ce qui remplace l'état complet — pas besoin de « Clear » préalable.
+  // En revanche le tri n'est pas réécouté sur navigation SPA : on le simule
+  // via le dropdown du panneau (sélecteurs vérifiés dans le DOM réel).
+  // Repli systématique : rechargement complet si une étape échoue.
+
+  const SORT_BUTTON_SELECTOR = '#button-sort';
+  const SORT_MENU_SELECTOR = '.catalog-index__dropdown-sort';
+  const APPLY_BUTTON_SELECTOR = '.filter-aside__actions .btn-primary';
+  const FILTERS_TIMEOUT = 4000;
+  const MENU_TIMEOUT = 1200;
+  const SORT_TIMEOUT = 3000;
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   /**
-   * Navigue vers l'URL du raccourci sans recharger la page si l'app suit.
+   * Attend qu'une condition devienne vraie.
+   * @returns {Promise<boolean>}
+   */
+  async function waitFor(fn, timeout) {
+    const start = Date.now();
+    for (; ;) {
+      let ok = false;
+      try {
+        ok = !!fn();
+      } catch (e) {
+        ok = false;
+      }
+      if (ok) return true;
+      if (Date.now() - start > timeout) return false;
+      await sleep(150);
+    }
+  }
+
+  function sortMenuOpen() {
+    const menu = document.querySelector(SORT_MENU_SELECTOR);
+    if (!menu) return false;
+    if (menu.classList.contains('show')) return true;
+    const btn = document.querySelector(SORT_BUTTON_SELECTOR);
+    return !!btn && btn.getAttribute('aria-expanded') === 'true';
+  }
+
+  /**
+   * Simule la sélection du tri dans le dropdown du panneau.
+   * @param {string} optionKey - data-qa-key de l'item (ex. "thCostToHigh")
+   * @returns {Promise<boolean>} true si le dropdown affiche l'option
+   */
+  async function simulateSortOption(optionKey) {
+    if (appliedSortOption() === optionKey) return true;
+    const btn = document.querySelector(SORT_BUTTON_SELECTOR);
+    if (!btn) return false;
+    if (!sortMenuOpen()) {
+      btn.click();
+      await waitFor(sortMenuOpen, MENU_TIMEOUT);
+    }
+    const item = document.querySelector(`${SORT_MENU_SELECTOR} [data-qa-key="${optionKey}"]`);
+    if (!item) return false;
+    item.click();
+    await sleep(100);
+    if (sortMenuOpen()) {
+      btn.click();
+      await sleep(100);
+    }
+    const applyButton = document.querySelector(APPLY_BUTTON_SELECTOR);
+    if (!applyButton) return false;
+    applyButton.click();
+    return true;
+  }
+
+  /**
+   * Navigue vers l'URL du raccourci : filtres via l'URL (SPA si l'app suit),
+   * tri via simulation dans le panneau, rechargement en repli.
    * @param {string} url
    */
-  function navigateToShortcut(url) {
+  async function navigateToShortcut(url) {
     let target;
     try {
       target = new URL(url, window.location.origin);
@@ -119,17 +223,30 @@
       window.location.href = url;
       return;
     }
-    // Si l'app Angular ne réagit pas au popstate, on recharge
-    // (l'URL cible est déjà en place dans la barre d'adresse).
-    setTimeout(() => {
-      if (cardsSignature() !== before) {
-        log('Navigation SPA vers le raccourci réussie');
-        refreshActiveStates();
-        return;
-      }
+    // 1. Les filtres doivent faire bouger la liste (l'app écoute `filters`)
+    const filtersApplied = await waitFor(() => {
+      const now = cardsSignature();
+      return now !== null && now !== before;
+    }, FILTERS_TIMEOUT);
+    if (!filtersApplied) {
       log("L'app n'a pas réagi à la navigation SPA, rechargement de la page");
       window.location.reload();
-    }, SPA_VERIFY_DELAY);
+      return;
+    }
+    // 2. Le tri n'est pas réécouté en SPA → simulation via le panneau
+    const expected = expectedSortOption(target);
+    if (expected === null) {
+      log('Navigation SPA vers le raccourci réussie');
+      refreshActiveStates();
+      return;
+    }
+    if (expected === undefined) {
+      log('Tri non simulable via le panneau, rechargement de la page');
+      window.location.reload();
+      return;
+    }
+    await simulateSortOption(expected);
+    refreshActiveStates();
   }
 
   // ─── Items de raccourcis ───────────────────────────────────────
